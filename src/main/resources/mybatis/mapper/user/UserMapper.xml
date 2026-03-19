@@ -1,0 +1,21 @@
+<!DOCTYPE mapper PUBLIC "//mybatis.org/DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.back.mapper.user.UserMapper">
+
+    <select id="selectUserList" parameterType="map" resultType="map">
+        SELECT a.id
+              ,a.name
+              ,a.role
+              ,a.email
+              ,IFNULL(a.status,'IA') as status
+              ,a.phone
+          FROM user_info a
+         WHERE 1=1
+         <if test="id != null">
+            AND a.id = #{id}
+         </if>
+         <if test="name != null">
+            AND a.name = #{name}
+         </if> 
+    </select>
+
+</mapper>

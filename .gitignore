@@ -1,0 +1,18 @@
+# Gradle 관련
+.gradle/
+gradle-*/
+gradle/
+build/
+!gradle-wrapper.jar
+
+# VS Code 및 IDE 설정
+.vscode/
+.settings/
+.project
+.classpath
+.factorypath
+bin/
+
+# OS 생성 파일
+.DS_Store
+Thumbs.db

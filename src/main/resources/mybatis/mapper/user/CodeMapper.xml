@@ -1,0 +1,22 @@
+<!DOCTYPE mapper PUBLIC "//mybatis.org/DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.back.mapper.code.CodeMapper">
+
+    <select id="selectMstCodeList" parameterType="map" resultType="map">
+         select a.mst_cd
+                ,a.mst_nm
+                ,a.use_yn
+                ,a.remark
+                ,a.attr1
+                ,a.attr2
+                ,a.attr3
+           from tb_common_code_mst a
+          where 1=1 
+            <if test="mst_cd != null and mst_cd != ''">
+            and a.mst_cd like CONCAT('%', #{mst_cd}, '%')
+            </if>
+            <if test="mst_nm != null and mst_nm != ''">
+            and a.mst_nm like CONCAT('%', #{mst_nm}, '%')
+            </if>
+    </select>
+
+</mapper>
