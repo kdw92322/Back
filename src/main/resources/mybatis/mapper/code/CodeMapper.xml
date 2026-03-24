@@ -19,4 +19,22 @@
             </if>
     </select>
 
+    <select id="selectDtlCodeList" parameterType="map" resultType="map">
+          select a.mst_cd
+                ,a.dtl_cd
+                ,a.dtl_nm
+                ,a.use_yn
+                ,a.remark
+                ,a.attr1
+                ,a.attr2
+                ,a.attr3
+            from tb_common_code_dtl a
+           where a.mst_cd = #{mst_cd}
+    </select>
+
+    <insert id="saveDtlCodeList" parameterType="map">
+        insert into tb_common_code_dtl (mst_cd, dtl_cd, dtl_nm, use_yn, remark, attr1, attr2, attr3)
+        values (#{mst_cd}, #{dtl_cd}, #{dtl_nm}, #{use_yn}, #{remark}, #{attr1}, #{attr2}, #{attr3})    
+    </insert>
+
 </mapper>

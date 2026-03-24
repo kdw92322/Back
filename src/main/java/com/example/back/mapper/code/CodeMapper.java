@@ -8,4 +8,6 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface CodeMapper {
     List<Map<String,Object>> selectMstCodeList(Map<String,Object> paramMap);
+    List<Map<String,Object>> selectDtlCodeList(Map<String,Object> paramMap);
+    int saveDtlCodeList(Map<String,Object> paramMap);
 }

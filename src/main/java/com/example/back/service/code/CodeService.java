@@ -17,4 +17,12 @@ public class CodeService {
     public List<Map<String,Object>> selectMstCodeList(Map<String,Object> paramMap) {
         return codemapper.selectMstCodeList(paramMap);
     }
+
+    public List<Map<String,Object>> selectDtlCodeList(Map<String,Object> paramMap) {
+        return codemapper.selectDtlCodeList(paramMap);
+    }
+
+    public int saveDtlCodeList(Map<String,Object> paramMap) {
+        return codemapper.saveDtlCodeList(paramMap);
+    }
 }

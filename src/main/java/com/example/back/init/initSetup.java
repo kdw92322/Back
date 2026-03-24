@@ -6,10 +6,10 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class initSetup implements ApplicationRunner{
+    
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        System.out.println("Auto Start: ApplicationRunner");
-        
+        System.out.println("Application started with option names : " + args.getOptionNames());
     }
 
 }
