@@ -32,9 +32,52 @@
            where a.mst_cd = #{mst_cd}
     </select>
 
-    <insert id="saveDtlCodeList" parameterType="map">
-        insert into tb_common_code_dtl (mst_cd, dtl_cd, dtl_nm, use_yn, remark, attr1, attr2, attr3)
-        values (#{mst_cd}, #{dtl_cd}, #{dtl_nm}, #{use_yn}, #{remark}, #{attr1}, #{attr2}, #{attr3})    
+    <insert id="insert" parameterType="map">
+        insert into tb_common_code_dtl (
+            mst_cd, 
+            dtl_cd, 
+            dtl_nm, 
+            use_yn, 
+            remark, 
+            attr1, 
+            attr2, 
+            attr3,
+            create_by,
+            create_dt
+        )
+        values (
+            #{mst_cd}, 
+            #{dtl_cd}, 
+            #{dtl_nm}, 
+            #{use_yn}, 
+            #{remark}, 
+            #{attr1}, 
+            #{attr2}, 
+            #{attr3},
+            #{createBy},
+            now()
+        )    
     </insert>
+
+    <update id="update" parameterType="map">
+        update tb_common_code_dtl
+           set dtl_nm = #{dtl_nm},
+               use_yn = #{use_yn},
+               remark = #{remark},
+               attr1 = #{attr1},
+               attr2 = #{attr2},
+               attr3 = #{attr3},
+               update_by = #{updateBy},
+               update_dt = now()
+         where mst_cd = #{mst_cd} 
+           and dtl_cd = #{dtl_cd}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        delete 
+          from tb_common_code_dtl
+         where mst_cd = #{mst_cd} 
+           and dtl_cd = #{dtl_cd}
+    </delete>
 
 </mapper>

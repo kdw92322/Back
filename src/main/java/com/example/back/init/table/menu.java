@@ -35,6 +35,18 @@ public class menu {
             columnDefinition = "CHAR(1) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci COMMENT '레벨'")
     private String level;
 
+    @Column(name = "use_yn", length = 1, 
+            columnDefinition = "CHAR(1) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci COMMENT '사용여부'")
+    private String useYn;
+    
+    @Column(name = "view_path", length = 50, 
+            columnDefinition = "VARCHAR(50) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci COMMENT 'view 파일경로'")
+    private String view_path;    
+
+    @Column(name = "module", length = 50, 
+            columnDefinition = "VARCHAR(50) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci COMMENT '모듈'")
+    private String module;    
+
     @Column(name = "createBy", length = 10, 
             columnDefinition = "VARCHAR(10) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci COMMENT '생성자'")
     private String createBy;

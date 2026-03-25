@@ -1,9 +1,9 @@
 package com.example.back.init.table;
 
+import java.time.LocalDateTime;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
@@ -31,4 +31,7 @@ public class user {
 
     @Column(name = "phone", length = 30, columnDefinition = "VARCHAR(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci COMMENT '전화번호'")
     private String phone;
+
+    @Column(name = "regDate", columnDefinition = "DATETIME COMMENT '가입일자'")
+    private LocalDateTime regDate;
 }

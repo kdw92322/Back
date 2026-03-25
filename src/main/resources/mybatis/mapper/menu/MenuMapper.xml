@@ -1,0 +1,77 @@
+<!DOCTYPE mapper PUBLIC "//mybatis.org/DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.back.mapper.menu.MenuMapper">
+    <select id="selectMenuList" parameterType="map" resultType="Map">
+        select a.code
+              ,a.name
+              ,a.path
+              ,a.level
+              ,a.order
+              ,a.parentcode
+              ,a.use_yn as useYn
+              , module
+              , view_path as viewPath
+              ,a.create_by
+              ,a.create_dt
+              ,a.update_by
+              ,a.update_dt
+          from tb_menu a
+         where 1=1 
+        <if test="code != null and code != ''">
+           AND a.code = #{code}
+        </if>
+        <if test="useYn != null and useYn != ''">
+           AND a.use_yn = #{useYn}
+        </if>
+
+    </select>
+
+    <insert id="insert" parameterType="map">
+        insert into tb_menu(
+            code
+          , name
+          , path
+          , level
+          , `order`
+          , parentcode
+          , use_yn
+          , module
+          , view_path
+          , create_by
+          , create_dt
+        )
+        values (
+            #{code}
+          , #{name}
+          , #{path}
+          , #{level}
+          , #{order}
+          , #{parentcode}
+          , #{useYn}
+          , #{module}
+          , #{viewPath}
+          , #{create_by}
+          , now()
+        )
+    </insert>
+
+    <update id="update" parameterType="map" >
+        update tb_menu
+           set name = #{name}
+             , path = #{path}
+             , level = #{level}
+             , `order` = #{order}
+             , parentcode = #{parentcode}
+             , use_yn = #{useYn}
+             , module = #{module}
+             , view_path = #{viewPath}
+             , update_by = #{update_by}
+             , update_dt = now()
+         where code = #{code}
+    </update>
+
+    <delete id="delete" parameterType="map">
+        delete 
+          from tb_menu
+         where code = #{code}
+    </delete>
+</mapper>

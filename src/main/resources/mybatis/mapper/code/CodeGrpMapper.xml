@@ -1,0 +1,26 @@
+<!DOCTYPE mapper PUBLIC "//mybatis.org/DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.back.mapper.code.CodeGrpMapper">
+
+    <insert id="insert" parameterType="map">
+        insert into tb_common_code_mst (mst_cd, mst_nm, use_yn, remark, attr1, attr2, attr3)
+        values (#{mst_cd}, #{mst_nm}, #{use_yn}, #{remark}, #{attr1}, #{attr2}, #{attr3})
+    </insert>   
+
+    <update id="update" parameterType="map">
+        update tb_common_code_mst
+        set mst_nm = #{mst_nm},
+            use_yn = #{use_yn},
+            remark = #{remark},
+            attr1 = #{attr1},
+            attr2 = #{attr2},
+            attr3 = #{attr3}
+        where mst_cd = #{mst_cd}
+    </update>
+
+    <delete id="delete" parameterType="map">
+       delete 
+         from tb_common_code_mst
+        where mst_cd = #{mst_cd}
+    </delete>
+
+</mapper>

@@ -18,4 +18,42 @@
          </if> 
     </select>
 
+    <insert id="insert" parameterType="java.util.Map">
+        INSERT INTO user_info (
+            id,
+            name,
+            password,
+            email,
+            phone,
+            role,
+            status,
+            reg_date
+        ) VALUES (
+            #{id},
+            #{name},
+            #{password},
+            #{email},
+            #{phone},
+            #{role},
+            IFNULL(#{status},'A'),
+            NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="java.util.Map">
+        UPDATE user_info
+        SET name = #{userName},
+            password = #{password},
+            email = #{email},
+            phone = #{phone},
+            role = #{role},
+            status = #{status}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete" parameterType="java.util.Map">
+        DELETE 
+          FROM user_info
+         WHERE id = #{id}
+    </delete>
 </mapper>

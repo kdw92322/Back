@@ -1,0 +1,48 @@
+<!DOCTYPE mapper PUBLIC "//mybatis.org/DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.back.mapper.authMng.AuthMngMapper">
+    <select id="selectAuthMngList" parameterType="map" resultType="map">
+        select role_id
+              ,remark
+              ,use_yn
+          from tb_role
+         where 1=1
+           and use_yn = 'Y'
+        <if test="role_id != null and role_id != ''">
+           and role_id like CONCAT('%', #{role_id}, '%')
+        </if>
+         order by role_id
+    </select>
+
+    <insert id="insert" parameterType="map">
+        insert into tb_role(
+            role_id
+           ,remark
+           ,use_yn
+           ,create_by
+           ,create_dt
+        ) values (
+            #{role_id}
+           ,#{remark}
+           ,#{use_yn}
+           ,#{createBy}
+           ,now()
+        )
+
+    </insert>
+
+    <update id="update" parameterType="map">
+        update tb_role
+           set remark = #{remark}
+              ,use_yn = #{use_yn}
+              ,update_by = #{updateBy} 
+              ,update_dt = now()
+         where role_id = #{role_id}
+       
+    </update>
+
+    <delete id="delete" parameterType="map">
+        delete 
+          from tb_role
+         where role_id = #{role_id}
+    </delete>
+</mapper>

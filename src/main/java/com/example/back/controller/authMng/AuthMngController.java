@@ -1,69 +1,63 @@
-package com.example.back.controller.code;
+package com.example.back.controller.authMng;
 
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.back.service.code.CodeService;
+import com.example.back.service.authMng.AuthMngService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-@RestController
-@RequestMapping("/code")
-public class CodeController {
-
+@RestController 
+@RequestMapping("/authMng")   
+public class AuthMngController {
+    
     @Autowired
-    private CodeService codeService;
+    private AuthMngService authMngService;
 
     @GetMapping("/select")
-    public List<Map<String,Object>> select(@RequestParam Map<String, Object> request) {
-        List<Map<String,Object>> result = codeService.selectMstCodeList(request);
-        return result;
+    public List<Map<String, Object>> selectAuthMngList(@RequestParam Map<String, Object> paramsMap) {
+        return authMngService.selectAuthMngList(paramsMap);
     }
 
-    @GetMapping("/selectDtl")
-    public List<Map<String,Object>> selectDtl(@RequestParam Map<String, Object> request) {
-        List<Map<String,Object>> result = codeService.selectDtlCodeList(request);
-        return result;
-    }
-
-    @PostMapping("/save")
-    public int save(@RequestBody Map<String, Object> saveObj) {
+    @PostMapping("save")
+    public int save(@RequestBody Map<String, Object> saveMap) {
         ObjectMapper mapper = new ObjectMapper();
         int result = 0;
 
         //1. insert
         List<Map<String, Object>> inserts = mapper.convertValue(
-            saveObj.get("inserts"),
+            saveMap.get("inserts"),
             new TypeReference<List<Map<String, Object>>>() {}
         );
         for (Map<String, Object> data : inserts) {
-            result += codeService.insert(data);
+            result += authMngService.insert(data);
         }
 
         //2. update
         List<Map<String, Object>> updates = mapper.convertValue(
-            saveObj.get("updates"),
+            saveMap.get("updates"),
             new TypeReference<List<Map<String, Object>>>() {}
         );
         for (Map<String, Object> data : updates) {
-            result += codeService.update(data);
+            result += authMngService.update(data);
         }
 
         return result;
     }
 
-    @PostMapping("/delete")
-    public int delete(@RequestBody Map<String, Object> params) {
-        System.out.println("saveObj : " + params);
-        Map<String, Object> dtl = (Map<String, Object>) params.get("dtl");
-        return codeService.delete(dtl);
+
+    @DeleteMapping("delete")
+    public int delete(@RequestBody Map<String, Object> delMap) {
+        return authMngService.delete(delMap);
     }
 }

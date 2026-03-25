@@ -1,7 +1,9 @@
 package com.example.back;
 
+import org.apache.ibatis.logging.log4j2.Log4j2Impl;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.mybatis.spring.SqlSessionTemplate;
+import org.mybatis.spring.boot.autoconfigure.ConfigurationCustomizer;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -23,5 +25,10 @@ public class BackApplication extends SpringBootServletInitializer{
 	@Bean(name = "sqlSession")
 	SqlSessionTemplate sqlSession(SqlSessionFactory sqlSessionFactory) throws Exception {
 	    return new SqlSessionTemplate(sqlSessionFactory);
-	}	
+	}
+
+    @Bean
+    public ConfigurationCustomizer mybatisConfigurationCustomizer() {
+        return configuration -> configuration.setLogImpl(Log4j2Impl.class);
+    }
 }
