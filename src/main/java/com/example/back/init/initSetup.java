@@ -11,7 +11,9 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.back.service.authMng.AuthMngService;
 import com.example.back.service.menu.MenuService;
+import com.example.back.service.menuAuth.MenuAuthService;
 
 @Component
 public class initSetup implements ApplicationRunner{
@@ -19,11 +21,25 @@ public class initSetup implements ApplicationRunner{
     @Autowired
     private MenuService menuService;
 
+    @Autowired
+    private AuthMngService authMngService;
+
+    @Autowired
+    private MenuAuthService menuAuthService;
+
     @Override
     @Transactional
     public void run(ApplicationArguments args) throws Exception {
         System.out.println("Application started with option names : " + args.getOptionNames());
+        
+        //1. 메뉴 초기설정
+        initMenu();
+        //2. 권한 초기설정
+        initAuth();
+    }
 
+    //1. 메뉴 초기설정
+    private void initMenu() {
         // 계층형 메뉴 데이터 구성
         List<Map<String, Object>> menuGroups = new ArrayList<>();
         
@@ -113,6 +129,45 @@ public class initSetup implements ApplicationRunner{
                     System.out.println("하위 메뉴 저장 실패 (" + itemName + "): " + e.getMessage());
                 }
             }
+        }
+    }
+
+    //2. 권한 초기설정
+    private void initAuth() {
+        // tb_menu_auth 테이블에 데이터가 없는 경우만 초기화 진행
+        int totalCount = menuAuthService.countAll();
+        if (totalCount > 0) {
+            return;
+        }
+
+        List<Map<String, Object>> authMngList = authMngService.selectAuthMngList(null);
+        List<Map<String, Object>> menuList = menuService.selectMenuList(null);
+
+        if (authMngList == null || menuList == null) return;
+
+        for(int i=0; i<authMngList.size(); i++){
+            Map<String, Object> authMng = authMngList.get(i);
+            String role_id = String.valueOf(authMng.get("role_id"));
+            
+            for(int j=0; j<menuList.size(); j++){
+                Map<String, Object> menuAuth = new HashMap<>();
+                menuAuth.put("role_id", role_id);
+                menuAuth.put("menu_code", menuList.get(j).get("code"));
+                menuAuth.put("update_by", "SYSTEM");
+
+                if(role_id.equals("ROLE_ADMIN")){
+                    menuAuth.put("c_yn", "Y");
+                    menuAuth.put("r_yn","Y");
+                    menuAuth.put("d_yn","Y");
+                    menuAuth.put("use_yn", "Y");   
+                } else {
+                    menuAuth.put("c_yn", "N");
+                    menuAuth.put("r_yn", "N");
+                    menuAuth.put("d_yn", "N");
+                    menuAuth.put("use_yn", "N");
+                }
+                menuAuthService.insert(menuAuth); 
+            }        
         }
     }
 

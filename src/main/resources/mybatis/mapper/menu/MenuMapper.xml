@@ -8,8 +8,8 @@
               ,a.order
               ,a.parentcode
               ,a.use_yn as useYn
-              , module
-              , view_path as viewPath
+              ,a.module
+              ,a.view_path as viewPath
               ,a.create_by
               ,a.create_dt
               ,a.update_by
@@ -22,8 +22,13 @@
         <if test="useYn != null and useYn != ''">
            AND a.use_yn = #{useYn}
         </if>
-
+         order by a.order
     </select>
+
+    <select id="createNewMenuCode" resultType="String">
+        select concat('M',LPAD(MAX(CAST(replace(code,'M','') AS UNSIGNED)) + 1,3,0)) as new_key
+          from tb_menu
+    </select>  
 
     <insert id="insert" parameterType="map">
         insert into tb_menu(
@@ -49,7 +54,7 @@
           , #{useYn}
           , #{module}
           , #{viewPath}
-          , #{create_by}
+          , #{createBy}
           , now()
         )
     </insert>
@@ -64,7 +69,7 @@
              , use_yn = #{useYn}
              , module = #{module}
              , view_path = #{viewPath}
-             , update_by = #{update_by}
+             , update_by = #{updateBy}
              , update_dt = now()
          where code = #{code}
     </update>

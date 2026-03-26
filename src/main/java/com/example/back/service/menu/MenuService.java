@@ -22,6 +22,9 @@ public class MenuService {
     }
 
     public int insert(Map<String, Object> saveMap){
+        String newMenuCode = menuMapper.createNewMenuCode();
+        saveMap.put("code", newMenuCode);
+        saveMap.put("level", "1");
         return menuMapper.insert(saveMap);
     }
 
@@ -42,6 +45,9 @@ public class MenuService {
             new TypeReference<List<Map<String, Object>>>() {}
         );
         for(Map<String, Object> insert : inserts){
+            String newMenuCode = menuMapper.createNewMenuCode();
+            insert.put("code", newMenuCode);
+            saveMap.put("level", "2");
             menuMapper.insert(insert);
         }
 
