@@ -28,7 +28,7 @@ public class BackUserDetailsService implements UserDetailsService {
         return new org.springframework.security.core.userdetails.User(
                 user.getId(),
                 user.getPassword(),
-                Collections.emptyList()
+                Collections.singletonList(new SimpleGrantedAuthority(user.getRole()))
         );
     }
 }

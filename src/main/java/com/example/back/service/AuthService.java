@@ -8,7 +8,10 @@ import com.example.back.repository.UserRepository;
 import com.example.back.security.JwtService;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -19,15 +22,18 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final UserDetailsService userDetailsService;
 
     public AuthService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
                        AuthenticationManager authenticationManager,
-                       JwtService jwtService) {
+                       JwtService jwtService,
+                       UserDetailsService userDetailsService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
+        this.userDetailsService = userDetailsService;
     }
 
     public AuthResponse register(RegisterRequest request) {
@@ -35,32 +41,27 @@ public class AuthService {
             throw new IllegalArgumentException("Id already exists");
         }
 
-        User user = new User(request.getId(), passwordEncoder.encode(request.getPassword()), request.getName());
+        User user = new User(request.getId(), passwordEncoder.encode(request.getPassword()), request.getName(), "ROLE_USER");
         userRepository.save(user);
 
-        // After registration, return a token
-        var userDetails = org.springframework.security.core.userdetails.User
-                .withUsername(user.getId())
-                .password(user.getPassword())
-                .build();
+        // 회원가입 후 DB에서 권한 정보를 포함한 UserDetails 로드
+        UserDetails userDetails = userDetailsService.loadUserByUsername(user.getId());
         String token = jwtService.generateToken(userDetails);
         return new AuthResponse(token);
     }
 
     public AuthResponse login(AuthRequest request) {
+        Authentication authentication;
         try {
-            authenticationManager.authenticate(
+            authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getId(), request.getPassword())
             );
         } catch (AuthenticationException e) {
             throw new IllegalArgumentException("Invalid username or password");
         }
 
-        var userDetails = org.springframework.security.core.userdetails.User
-                .withUsername(request.getId())
-                .password(request.getPassword())
-                .build();
-
+        // 인증된 결과(Principal)에서 실제 권한이 포함된 UserDetails 추출
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         String token = jwtService.generateToken(userDetails);
         return new AuthResponse(token);
     }

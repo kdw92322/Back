@@ -27,6 +27,9 @@ public class initSetup implements ApplicationRunner{
     @Autowired
     private MenuAuthService menuAuthService;
 
+    @Autowired
+    private SecurityService securityService;
+
     @Override
     @Transactional
     public void run(ApplicationArguments args) throws Exception {
@@ -34,6 +37,7 @@ public class initSetup implements ApplicationRunner{
         
         //1. 메뉴 초기설정
         initMenu();
+
         //2. 권한 초기설정
         initAuth();
     }
@@ -47,24 +51,27 @@ public class initSetup implements ApplicationRunner{
         Map<String, Object> group1 = new HashMap<>();
         group1.put("title", "시스템 관리");
         group1.put("items", List.of(
-            Map.of("name", "사용자 관리", "path", "/users", "viewpath", "@/pages/sys/UserManagement", "module", "module.UserManagement"),
-            Map.of("name", "메뉴 관리", "path", "/menu", "viewpath", "@/pages/sys/MenuManagement", "module", "module.MenuManagement"),
-            Map.of("name", "권한 관리", "path", "/auth", "viewpath", "@/pages/sys/AuthManagement", "module", "module.AuthManagement"),
-            Map.of("name", "코드그룹 관리", "path", "/codeGroup", "viewpath", "@/pages/sys/CodeGrpManagement", "module", "module.CodeGrpManagement"),
-            Map.of("name", "코드 관리", "path", "/code", "viewpath", "@/pages/sys/CodeManagement", "module", "module.CodeManagement")
+            Map.of("name", "사용자 관리", "path", "/users", "viewpath", "./sys/UserManagement", "module", "module.UserManagement"),
+            Map.of("name", "메뉴 관리", "path", "/menu", "viewpath", "./sys/MenuManagement", "module", "module.MenuManagement"),
+            Map.of("name", "권한 관리", "path", "/auth", "viewpath", "./sys/AuthManagement", "module", "module.AuthManagement"),
+            Map.of("name", "권한에 대한 접근관리", "path", "/menuauth", "viewpath", "./sys/MenuAuthManagement", "module", "module.MenuAuthManagement"),
+            Map.of("name", "코드그룹 관리", "path", "/codeGroup", "viewpath", "./sys/CodeGrpManagement", "module", "module.CodeGrpManagement"),
+            Map.of("name", "코드 관리", "path", "/code", "viewpath", "./sys/CodeManagement", "module", "module.CodeManagement")
         ));
         menuGroups.add(group1);
         
         // 2. 게시판 관리
+        
         Map<String, Object> group2 = new HashMap<>();
-        group2.put("title", "게시판 관리");
+        group2.put("title", "Notice");
         group2.put("items", List.of(
-            Map.of("name", "게시판 관리", "path", "/boardMng", "viewpath", "@/pages/sys/BoardManagement", "module", "module.BoardManagement")
+            Map.of("name", "게시판", "path", "/board", "viewpath", "./notice/Board", "module", "module.Board"),
+            Map.of("name", "공지사항", "path", "/notice", "viewpath", "./notice/Notice", "module", "module.Notice")
         ));
         menuGroups.add(group2);
+        
 
         int codeSeq = 1;
-
         for (int i = 0; i < menuGroups.size(); i++) {
             Map<String, Object> group = menuGroups.get(i);
             String groupTitle = (String) group.get("title");
@@ -72,6 +79,7 @@ public class initSetup implements ApplicationRunner{
 
             // 1) 상위 메뉴(그룹) Insert
             String parentCode = "M" + String.format("%03d", codeSeq++);
+            System.out.println("parentCode: " + parentCode);
             Map<String, Object> parentMap = new HashMap<>();
             parentMap.put("code", parentCode);
             parentMap.put("parentcode", "ROOT");
@@ -80,7 +88,7 @@ public class initSetup implements ApplicationRunner{
             parentMap.put("order", String.valueOf(i + 1));
             parentMap.put("level", "1");
             parentMap.put("useYn", "Y");
-            parentMap.put("create_by", "SYSTEM");
+            parentMap.put("createBy", "SYSTEM");
 
             Map<String, Object> parentParam = new HashMap<>();
             parentParam.put("code", parentCode);
@@ -101,11 +109,8 @@ public class initSetup implements ApplicationRunner{
                 String itemPath = item.get("path");
                 String viewpath = item.get("viewpath");
                 String module = item.get("module");
-                
-                System.out.println("viewpath: " + viewpath);
-                System.out.println("module: " + module);
-
                 String childCode = "M" + String.format("%03d", codeSeq++);
+                
                 Map<String, Object> childMap = new HashMap<>();
                 childMap.put("code", childCode);
                 childMap.put("parentcode", parentCode);
@@ -116,7 +121,7 @@ public class initSetup implements ApplicationRunner{
                 childMap.put("useYn", "Y");
                 childMap.put("viewPath", viewpath);
                 childMap.put("module", module);
-                childMap.put("create_by", "SYSTEM");
+                childMap.put("createBy", "SYSTEM");
 
                 Map<String, Object> childParam = new HashMap<>();
                 childParam.put("code", childCode);
@@ -142,7 +147,7 @@ public class initSetup implements ApplicationRunner{
 
         List<Map<String, Object>> authMngList = authMngService.selectAuthMngList(null);
         List<Map<String, Object>> menuList = menuService.selectMenuList(null);
-
+            
         if (authMngList == null || menuList == null) return;
 
         for(int i=0; i<authMngList.size(); i++){
@@ -151,21 +156,29 @@ public class initSetup implements ApplicationRunner{
             
             for(int j=0; j<menuList.size(); j++){
                 Map<String, Object> menuAuth = new HashMap<>();
-                menuAuth.put("role_id", role_id);
-                menuAuth.put("menu_code", menuList.get(j).get("code"));
-                menuAuth.put("update_by", "SYSTEM");
+                Map<String, Object> menuInfo = menuList.get(j);
+                
+                String menucode = String.valueOf(menuInfo.get("code"));    
+                String viewPath = String.valueOf(menuInfo.get("viewPath"));
+                String parentcode = String.valueOf(menuInfo.get("parentcode"));
 
+                menuAuth.put("role_id", role_id);
+                menuAuth.put("menu_code", menucode);
+                menuAuth.put("updateBy", "SYSTEM");
+                
                 if(role_id.equals("ROLE_ADMIN")){
                     menuAuth.put("c_yn", "Y");
                     menuAuth.put("r_yn","Y");
                     menuAuth.put("d_yn","Y");
-                    menuAuth.put("use_yn", "Y");   
-                } else {
-                    menuAuth.put("c_yn", "N");
-                    menuAuth.put("r_yn", "N");
-                    menuAuth.put("d_yn", "N");
-                    menuAuth.put("use_yn", "N");
-                }
+                    menuAuth.put("use_yn", "Y");
+                } else if(role_id.equals("ROLE_USER") || role_id.equals("ROLE_GUEST")){
+                    if((viewPath.indexOf("sys") < 0)){
+                        menuAuth.put("c_yn", "Y");
+                        menuAuth.put("r_yn","Y");
+                        menuAuth.put("d_yn","Y");
+                        menuAuth.put("use_yn", "Y");
+                    }
+                } 
                 menuAuthService.insert(menuAuth); 
             }        
         }

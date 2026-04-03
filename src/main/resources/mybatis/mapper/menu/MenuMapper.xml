@@ -22,11 +22,19 @@
         <if test="useYn != null and useYn != ''">
            AND a.use_yn = #{useYn}
         </if>
+        <if test="role_id != null and role_id != ''">
+           AND a.code in (
+                select menucode
+                from tb_menu_auth
+                where use_yn = 'Y'
+                and role_id = #{role_id}
+            )
+        </if>
          order by a.order
     </select>
 
     <select id="createNewMenuCode" resultType="String">
-        select concat('M',LPAD(MAX(CAST(replace(code,'M','') AS UNSIGNED)) + 1,3,0)) as new_key
+        select concat('M',LPAD(IFNULL(MAX(CAST(replace(code,'M','') AS UNSIGNED)),0) + 1,3,0)) as new_key
           from tb_menu
     </select>  
 

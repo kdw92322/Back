@@ -14,4 +14,6 @@ public interface MenuAuthMapper {
     int save(Map<String,Object> param);
 
     int insert(Map<String,Object> param);
+
+    int update(Map<String,Object> param);
 }

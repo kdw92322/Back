@@ -32,8 +32,8 @@ public class MenuAuthController {
         return menuAuthService.insert(param);
     }
 
-    @PostMapping("/save")
-    public int save(@RequestBody Map<String, Object> param) {
-        return menuAuthService.save(param);
+    @PostMapping("/update")
+    public int update(@RequestBody Map<String, Object> param) {
+        return menuAuthService.update(param);
     }
 }

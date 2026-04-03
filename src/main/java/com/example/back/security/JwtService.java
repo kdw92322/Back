@@ -12,8 +12,11 @@ import java.security.Key;
 import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import org.springframework.security.core.GrantedAuthority;
 
 @Service
 public class JwtService {
@@ -29,7 +32,17 @@ public class JwtService {
 
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("roles", userDetails.getAuthorities());
+        // 권한 정보를 문자열 리스트로 변환 (예: ["ROLE_USER", "ROLE_ADMIN"])
+        List<String> roles = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toList());
+        claims.put("roles", roles);
+
+        // 클라이언트에서 'userRole' 키로 바로 접근할 수 있도록 첫 번째 권한 추가
+        if (!roles.isEmpty()) {
+            claims.put("userRole", roles.get(0));
+        }
+
         Instant now = Instant.now();
         return Jwts.builder()
                 .setClaims(claims)

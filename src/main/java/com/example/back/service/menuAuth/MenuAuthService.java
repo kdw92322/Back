@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.example.back.mapper.menuAuth.MenuAuthMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class MenuAuthService {
@@ -22,16 +24,30 @@ public class MenuAuthService {
         return menuAuthMapper.countAll();
     }
 
-    public int save(Map<String,Object> param) {
-        System.out.println(param);
-
-        String role_id = String.valueOf(param.get("role_id"));    
-
-        return 1;
+    public int insert(Map<String,Object> saveMap) {
+        return menuAuthMapper.insert(saveMap);
     }
 
-    public int insert(Map<String,Object> param) {
-        return menuAuthMapper.insert(param);
+    public int update(Map<String,Object> saveMap) {
+        ObjectMapper mapper = new ObjectMapper();
+        
+        int result = 0;
+        List<Map<String, Object>> auths = mapper.convertValue(
+            saveMap.get("auths"),
+            new TypeReference<List<Map<String, Object>>>() {}
+        );
+
+        for (Map<String, Object> auth : auths) {
+            List<Map<String, Object>> list = select(auth);    
+            int size = list.size();
+            if (size == 0) {
+                insert(auth);
+            } else {   
+                result += menuAuthMapper.update(auth);
+            }
+        }
+
+        return result;
     }
 
 }

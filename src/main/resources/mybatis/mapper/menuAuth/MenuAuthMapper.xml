@@ -13,7 +13,14 @@
                ifnull(b.d_yn,'N') as d_yn 
           from tb_menu a
           left outer join tb_menu_auth b on a.code = b.menucode 
-         where b.role_id = #{role_id} 
+         where 1=1 
+           <if test="menu_code != null and menu_code != ''">
+           and a.code = #{menu_code} 
+          </if> 
+          <if test="role_id != null and role_id != ''">
+           and b.role_id = #{role_id} 
+          </if> 
+
     </select>
 
     <insert id="insert" parameterType="map">
@@ -33,7 +40,7 @@
            ,IFNULL(#{r_yn}, 'N')
            ,IFNULL(#{d_yn}, 'N')
            ,IFNULL(#{use_yn}, 'N')
-           ,#{update_by}
+           ,#{updateBy}
            ,NOW()
         )
     </insert>
@@ -44,7 +51,7 @@
               ,r_yn = #{r_yn}
               ,d_yn = #{d_yn}
               ,use_yn = #{use_yn}
-              ,update_by = #{update_by}
+              ,update_by = #{updateBy}
               ,update_dt = NOW()
          where 1=1
            and menucode = #{menu_code}

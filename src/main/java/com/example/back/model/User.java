@@ -16,13 +16,17 @@ public class User {
     @Column(name = "name")
     private String name;
 
+    @Column(name = "role", length = 10, columnDefinition = "VARCHAR(10) COMMENT '권한'")
+    private String role;
+
     public User() {
     }
 
-    public User(String id, String password, String name) {
+    public User(String id, String password, String name, String role) {
         this.id = id;
         this.password = password;
         this.name = name;
+        this.role = role;
     }
 
     public String getId() {
@@ -47,5 +51,13 @@ public class User {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
     }
 }
