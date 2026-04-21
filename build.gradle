@@ -28,6 +28,9 @@ dependencies {
     implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.3'
     implementation 'com.fasterxml.jackson.core:jackson-databind'
 
+    // PostgreSQL 드라이버
+    runtimeOnly 'org.postgresql:postgresql'
+
     //runtimeOnly 'com.h2database:h2' 테스트용 DB (실제 운영시 MySQL 등 사용)
     runtimeOnly 'com.mysql:mysql-connector-j'
 

@@ -6,7 +6,7 @@
               ,a.name
               ,a.role
               ,a.email
-              ,IFNULL(a.status,'IA') as status
+              ,COALESCE(a.status,'IA') as status
               ,a.phone
           FROM user_info a
          WHERE 1=1
@@ -35,7 +35,7 @@
             #{email},
             #{phone},
             #{role},
-            IFNULL(#{status},'A'),
+            COALESCE(#{status},'A'),
             NOW()
         )
     </insert>

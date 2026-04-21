@@ -4,48 +4,53 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "tb_common_code_dtl")
+@Getter @Setter
 public class codeDtl {
-    @Id
-    @Column(name = "mst_cd", length = 20, nullable = false, columnDefinition = "VARCHAR(20) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci COMMENT 'MST 코드'")
+
+    @Column(name = "mst_cd", length = 20, nullable = false)
     private String mstCd;
 
     @Id
-    @Column(name = "dtl_cd", length = 20, nullable = false, columnDefinition = "VARCHAR(20) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci COMMENT 'DTL 코드'")
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // PostgreSQL SERIAL 매핑
+    @Column(name = "dtl_cd", length = 20, nullable = false)
     private String dtlCd;
 
-    @Column(name = "dtl_nm", length = 20, columnDefinition = "VARCHAR(20) COMMENT 'DTL 이름'")
+    @Column(name = "dtl_nm", length = 20)
     private String dtlNm;
 
-    @Column(name = "use_yn", length = 1, columnDefinition = "CHAR(1) COMMENT '사용여부'")
+    @Column(name = "use_yn", length = 1)
     private String useYn;
 
-    @Column(length = 2000, columnDefinition = "VARCHAR(2000) COMMENT '비고'")
+    @Column(length = 2000)
     private String remark;
 
-    @Column(length = 100, columnDefinition = "VARCHAR(100) COMMENT '속성1'")
+    @Column(length = 100)
     private String attr1;
 
-    @Column(length = 100, columnDefinition = "VARCHAR(100) COMMENT '속성2'")
+    @Column(length = 100)
     private String attr2;
 
-    @Column(length = 100, columnDefinition = "VARCHAR(100) COMMENT '속성3'")
+    @Column(length = 100)
     private String attr3;
 
-    @Column(name = "createBy", length = 50, columnDefinition = "VARCHAR(50) COMMENT '작성자'")
+    @Column(name = "create_by", length = 50)
     private String createBy;
 
-    @Column(name = "createDt", columnDefinition = "DATETIME COMMENT '작성일시'")
+    @Column(name = "create_dt")
     private LocalDateTime createDt;
 
-    @Column(name = "updateBy", length = 100, columnDefinition = "VARCHAR(100) COMMENT '수정자'")
+    @Column(name = "update_by", length = 100)
     private String updateBy;
 
-    @Column(name = "updateDt", columnDefinition = "DATETIME COMMENT '수정일시'")
+    @Column(name = "update_dt")
     private LocalDateTime updateDt;
-    
 }

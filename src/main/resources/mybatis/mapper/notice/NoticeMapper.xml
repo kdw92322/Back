@@ -1,0 +1,53 @@
+<!DOCTYPE mapper PUBLIC "//mybatis.org/DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.back.mapper.notice.NoticeMapper">
+    <select id="getNoticeList" resultType="map">
+        SELECT id
+             , title
+             , content
+             , writer
+             , view_count
+             , create_by
+             , update_by
+             , create_dt
+             , update_dt
+        FROM tb_notice
+        ORDER BY create_dt DESC
+    </select>
+
+    <select id="countAll" resultType="int">
+        SELECT COUNT(*) FROM tb_notice
+    </select>
+
+    <insert id="createNotice" parameterType="map">
+        <selectKey keyProperty="id" resultType="int" order="BEFORE">
+            select ifnull(max(id),0) + 1 as id from tb_notice
+        </selectKey>
+
+        INSERT INTO tb_notice (
+            id, title, content, writer, view_count, create_by,  create_dt
+        ) VALUES (
+            #{id}, #{title}, #{content}, #{writer}, COALESCE(#{view_count}, 0), #{create_by}, NOW()
+        ) 
+    </insert>
+
+    <update id="updateNotice" parameterType="map">
+        UPDATE tb_notice
+        SET title = #{title}, 
+            content = #{content},
+            writer = #{writer},
+            update_by = #{update_by},
+            update_dt = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateViewCount" parameterType="map">
+        UPDATE tb_notice
+        SET view_count = view_count + 1
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteNotice" parameterType="map">
+        DELETE FROM tb_notice
+        WHERE id = #{id}    
+    </delete>
+</mapper>

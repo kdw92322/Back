@@ -7,10 +7,10 @@
     <select id="select" parameterType="map" resultType="Map">
         select a.code as menu_code, 
                a.name, 
-               ifnull(b.use_yn,'N') as use_yn,
-               ifnull(b.c_yn,'N') as c_yn, 
-               ifnull(b.r_yn,'N') as r_yn, 
-               ifnull(b.d_yn,'N') as d_yn 
+               COALESCE(b.use_yn,'N') as use_yn,
+               COALESCE(b.c_yn,'N') as c_yn, 
+               COALESCE(b.r_yn,'N') as r_yn, 
+               COALESCE(b.d_yn,'N') as d_yn 
           from tb_menu a
           left outer join tb_menu_auth b on a.code = b.menucode 
          where 1=1 
@@ -36,10 +36,10 @@
         ) values (
             #{menu_code}
            ,#{role_id}
-           ,IFNULL(#{c_yn}, 'N')
-           ,IFNULL(#{r_yn}, 'N')
-           ,IFNULL(#{d_yn}, 'N')
-           ,IFNULL(#{use_yn}, 'N')
+           ,COALESCE(#{c_yn}, 'N')
+           ,COALESCE(#{r_yn}, 'N')
+           ,COALESCE(#{d_yn}, 'N')
+           ,COALESCE(#{use_yn}, 'N')
            ,#{updateBy}
            ,NOW()
         )

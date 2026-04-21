@@ -1,0 +1,14 @@
+<!DOCTYPE mapper PUBLIC "//mybatis.org/DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.back.mapper.s1000d.S1000DMapper">
+    <insert id="insertFileInfo">
+        INSERT INTO csdb_data_modules (
+             dm_code 
+            ,title 
+            ,file_path 
+            ,xml_content 
+            ,created_at 
+        ) VALUES (
+            
+        )
+    </insert>
+</mapper>
