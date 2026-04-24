@@ -30,21 +30,41 @@ public class MenuAuthService {
 
     public int update(Map<String,Object> saveMap) {
         ObjectMapper mapper = new ObjectMapper();
-        
         int result = 0;
+        
         List<Map<String, Object>> auths = mapper.convertValue(
             saveMap.get("auths"),
             new TypeReference<List<Map<String, Object>>>() {}
         );
 
         for (Map<String, Object> auth : auths) {
+            auth.put("updateBy", saveMap.get("updateBy"));
+            System.out.println("auth : " + auth);
+
+            if (auth.containsKey("use_yn")) {
+                auth.put("useYn", auth.get("use_yn"));
+            }
+
+            if (auth.containsKey("c_yn")) {
+                auth.put("cYn", auth.get("c_yn"));
+            }
+
+            if (auth.containsKey("r_yn")) {
+                auth.put("rYn", auth.get("r_yn"));
+            }
+
+            if (auth.containsKey("d_yn")) {
+                auth.put("dYn", auth.get("d_yn"));
+            }
+
             List<Map<String, Object>> list = select(auth);    
             int size = list.size();
             if (size == 0) {
                 insert(auth);
-            } else {   
+            } else {
                 result += menuAuthMapper.update(auth);
             }
+
         }
 
         return result;

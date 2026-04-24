@@ -9,6 +9,7 @@
               ,a.parentcode
               ,a.use_yn
               ,a.module
+              ,COALESCE(a.is_pop, 'N') as is_pop
               ,a.view_path
               ,a.create_by
               ,a.create_dt
@@ -34,8 +35,8 @@
     </select>
 
     <select id="createNewMenuCode" resultType="String">
-        select concat('M',LPAD(COALESCE(MAX(CAST(replace(code,'M','') AS UNSIGNED)),0) + 1,3,0)) as new_key
-          from tb_menu
+        SELECT 'M' || LPAD((COALESCE(MAX(CAST(REPLACE(code, 'M', '') AS INTEGER)), 0) + 1)::text, 3, '0') AS new_key 
+          FROM tb_menu
     </select>  
 
     <insert id="insert" parameterType="map">
@@ -44,11 +45,12 @@
           , name
           , path
           , level
-          , `order`
+          , "order"
           , parentcode
           , use_yn
           , module
           , view_path
+          , is_pop
           , create_by
           , create_dt
         )
@@ -59,9 +61,10 @@
           , #{level}
           , #{order}
           , #{parentcode}
-          , #{useYn}
+          , #{use_yn}
           , #{module}
-          , #{viewPath}
+          , #{view_path}
+          , #{is_pop}
           , #{createBy}
           , now()
         )
@@ -72,11 +75,12 @@
            set name = #{name}
              , path = #{path}
              , level = #{level}
-             , `order` = #{order}
+             , "order" = #{order}
              , parentcode = #{parentcode}
-             , use_yn = #{useYn}
+             , use_yn = #{use_yn}
              , module = #{module}
-             , view_path = #{viewPath}
+             , view_path = #{view_path}
+             , is_pop = #{is_pop}
              , update_by = #{updateBy}
              , update_dt = now()
          where code = #{code}

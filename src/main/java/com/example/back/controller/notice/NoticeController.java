@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -46,7 +47,7 @@ public class NoticeController {
      * AuthAspect에 의해 'inserts', 'updates' 내의 데이터에 사용자 ID가 자동 주입됩니다.
      */
     @PostMapping("/insert")
-    public void saveNotice(@RequestBody Map<String, Object> params) {
+    public void saveNotice(@ModelAttribute Map<String, Object> params) {
         noticeService.saveNotice(params);
     }
 
@@ -54,7 +55,7 @@ public class NoticeController {
      * 공지사항 개별 수정
      */
     @PostMapping("/update")
-    public void updateNotice(@RequestBody Map<String, Object> params) {
+    public void updateNotice(@ModelAttribute Map<String, Object> params) {
         noticeService.updateNotice(params);
     }
 

@@ -21,7 +21,7 @@ public class MenuController {
     @Autowired
     private MenuService menuService;
 
-    @GetMapping("/select")
+    @GetMapping("select")
     public List<Map<String, Object>> selectMenuList(@RequestParam Map<String, Object> paramsMap) {
         return menuService.selectMenuList(paramsMap);
     }

@@ -167,16 +167,16 @@ public class initSetup implements ApplicationRunner{
                 menuAuth.put("updateBy", "SYSTEM");
                 
                 if(role_id.equals("ROLE_ADMIN")){
-                    menuAuth.put("c_yn", "Y");
-                    menuAuth.put("r_yn","Y");
-                    menuAuth.put("d_yn","Y");
-                    menuAuth.put("use_yn", "Y");
+                    menuAuth.put("cYn", "Y");
+                    menuAuth.put("rYn","Y");
+                    menuAuth.put("dYn","Y");
+                    menuAuth.put("useYn", "Y");
                 } else if(role_id.equals("ROLE_USER") || role_id.equals("ROLE_GUEST")){
                     if((viewPath.indexOf("sys") < 0)){
-                        menuAuth.put("c_yn", "Y");
-                        menuAuth.put("r_yn","Y");
-                        menuAuth.put("d_yn","Y");
-                        menuAuth.put("use_yn", "Y");
+                        menuAuth.put("cYn", "Y");
+                        menuAuth.put("rYn","Y");
+                        menuAuth.put("dYn","Y");
+                        menuAuth.put("useYn", "Y");
                     }
                 } 
                 menuAuthService.insert(menuAuth); 

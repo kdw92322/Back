@@ -2,6 +2,10 @@ package com.example.back.controller.board;
 
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,29 +22,23 @@ import org.springframework.web.bind.annotation.PutMapping;
 public class BoardController {
     
     @GetMapping("select")
-    public String select(@RequestParam String param) {
-        return new String();
+    public List<Map<String, Object>> select(@RequestParam String param) {
+        return null;
     }
 
     @PostMapping("insert")
-    public String postMethodName(@RequestBody String entity) {
-        //TODO: process POST request
+    public void postMethodName(@RequestBody String entity) {
         
-        return entity;
     }
 
     @PutMapping("update")
-    public String putMethodName(@PathVariable String id, @RequestBody String entity) {
-        //TODO: process PUT request
-        
-        return entity;
+    public void putMethodName(@PathVariable String id, @RequestBody String entity) {
+
     }
     
     @DeleteMapping("delete")
-    public String deleteMethodName(@RequestBody String id) {
-        //TODO: process DELETE request
-        
-        return id;
+    public void deleteMethodName(@RequestBody String id) {
+
     }
     
 }

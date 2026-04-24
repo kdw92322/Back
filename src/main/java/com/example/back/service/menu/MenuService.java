@@ -23,23 +23,23 @@ public class MenuService {
     private MenuAuthMapper menuAuthMapper;
 
     public List<Map<String, Object>> selectMenuList(Map<String, Object> paramsMap) {
-        return menuMapper.selectMenuList(paramsMap);
+        List<Map<String, Object>> menuList= menuMapper.selectMenuList(paramsMap);
+        return menuList;
     }
 
     public int insert(Map<String, Object> saveMap){
         try {
             String newMenuCode = menuMapper.createNewMenuCode();
-            System.out.println("newMenuCode: " + newMenuCode);
 
             if(saveMap.get("role_id") != null){
                 String role_id = String.valueOf(saveMap.get("role_id"));
                 Map<String, Object> newAuthMap = new HashMap<>();
                 newAuthMap.put("menu_code", newMenuCode);
                 newAuthMap.put("role_id", role_id);
-                newAuthMap.put("c_yn", "Y");
-                newAuthMap.put("r_yn", "Y");
-                newAuthMap.put("d_yn", "Y");
-                newAuthMap.put("use_yn", "Y");
+                newAuthMap.put("cYn", "Y");
+                newAuthMap.put("rYn", "Y");
+                newAuthMap.put("dYn", "Y");
+                newAuthMap.put("useYn", "Y");
 
                 menuAuthMapper.insert(newAuthMap);
             }
@@ -55,6 +55,7 @@ public class MenuService {
     }
 
     public int update(Map<String, Object> saveMap){
+        System.out.println(saveMap);
         return menuMapper.update(saveMap);
     }
 
@@ -74,6 +75,7 @@ public class MenuService {
             String newMenuCode = menuMapper.createNewMenuCode();
             insert.put("code", newMenuCode);
             insert.put("level", "2");
+            System.out.println("insert : " + insert);
             menuMapper.insert(insert);
         }
 
@@ -83,6 +85,7 @@ public class MenuService {
             new TypeReference<List<Map<String, Object>>>() {}
         );
         for(Map<String, Object> update : updates){
+            System.out.println("update : " + update);
             menuMapper.update(update);
         }
 

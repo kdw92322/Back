@@ -36,10 +36,10 @@
         ) values (
             #{menu_code}
            ,#{role_id}
-           ,COALESCE(#{c_yn}, 'N')
-           ,COALESCE(#{r_yn}, 'N')
-           ,COALESCE(#{d_yn}, 'N')
-           ,COALESCE(#{use_yn}, 'N')
+           ,COALESCE(#{cYn}, 'N')
+           ,COALESCE(#{rYn}, 'N')
+           ,COALESCE(#{dYn}, 'N')
+           ,COALESCE(#{useYn}, 'N')
            ,#{updateBy}
            ,NOW()
         )
@@ -47,10 +47,10 @@
 
     <update id="update" parameterType="map">
         update tb_menu_auth
-           set c_yn = #{c_yn}
-              ,r_yn = #{r_yn}
-              ,d_yn = #{d_yn}
-              ,use_yn = #{use_yn}
+           set c_yn = #{cYn}
+              ,r_yn = #{rYn}
+              ,d_yn = #{dYn}
+              ,use_yn = #{useYn}
               ,update_by = #{updateBy}
               ,update_dt = NOW()
          where 1=1

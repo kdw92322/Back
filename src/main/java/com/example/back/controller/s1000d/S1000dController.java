@@ -12,6 +12,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.GetMapping;
 
 @RestController
@@ -45,23 +46,13 @@ public class S1000dController {
         return rtnList;
     }
     
-    @GetMapping("/getContent")
-    public ResponseEntity<String> getContent(@RequestParam String path) {
+    @PostMapping("/getContent")
+    public ResponseEntity<Map<String, Object>> getContent(@RequestBody Map<String, Object> param) {
         try {
-            String content = s1000DService.getContent(path);
+            Map<String, Object> content = s1000DService.getContent(param);
             return ResponseEntity.ok(content);
         } catch (IOException | SecurityException e) {
-            return ResponseEntity.internalServerError().body("파일 읽기 오류: " + e.getMessage());
-        }
-    }
-
-    @GetMapping("/getJsonContent")
-    public ResponseEntity<JsonNode> getJsonContent(@RequestParam String path) {
-        try {
-            JsonNode node = s1000DService.getJsonContent(path);
-            return ResponseEntity.ok(node);
-        } catch (IOException | SecurityException e) {
-            return ResponseEntity.internalServerError().build();
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }
     }
 

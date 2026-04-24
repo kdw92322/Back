@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.ArrayList;
 
@@ -22,6 +23,7 @@ import java.util.zip.ZipInputStream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
@@ -34,46 +36,57 @@ public class S1000DService {
     @Autowired
     private S1000DMapper s1000DMapper;
     
+    @Transactional(rollbackFor = Exception.class)
     public void storeUnzippedFiles(MultipartFile zipFile) throws IOException {
-        // 1. 저장할 디렉토리 생성
+        // 1. 절대 경로 정규화 및 디렉토리 생성
         Path targetDir = Paths.get(uploadRoot).toAbsolutePath().normalize();
         if (!Files.exists(targetDir)) {
             Files.createDirectories(targetDir);
         }
 
-        // 2. ZIP 스트림 읽기 (한글 파일명 대응을 위해 필요시 Charset 지정)
+        // 2. ZIP 스트림 처리 (Try-with-resources로 자원 반환 보장)
         try (ZipInputStream zis = new ZipInputStream(zipFile.getInputStream(), StandardCharsets.UTF_8)) {
             ZipEntry entry;
             
             while ((entry = zis.getNextEntry()) != null) {
-                // 보안: Zip Slip 방지 및 경로 결합
-                System.out.println("처리 중인 ZIP 엔트리: " + entry.getName()); // 디버깅용 로그
-
+                // 보안: Zip Slip 취약점 방지
                 Path filePath = targetDir.resolve(entry.getName()).normalize();
-                System.out.println("처리 중인 파일: " + filePath); // 디버깅용 로그
-
                 if (!filePath.startsWith(targetDir)) {
                     throw new IOException("유효하지 않은 파일 경로입니다: " + entry.getName());
                 }
 
                 if (entry.isDirectory()) {
-                    // 폴더인 경우 생성
                     Files.createDirectories(filePath);
                 } else {
-                    // 파일인 경우: 부모 폴더가 없으면 생성 후 파일 복사
+                    // 부모 디렉토리가 없으면 생성
                     if (filePath.getParent() != null && !Files.exists(filePath.getParent())) {
                         Files.createDirectories(filePath.getParent());
                     }
                     
-                    // 핵심: 해당 경로에 파일 저장 (기존 파일 있을 시 덮어쓰기)
-                    Files.copy(zis, filePath, StandardCopyOption.REPLACE_EXISTING);
+                    // 파일 쓰기 (메모리 효율을 위해 대용량 파일은 스트림 복사를 권장하지만, 
+                    // S1000D XML 특성상 readAllBytes를 사용해도 무방함)
+                    byte[] fileBytes = zis.readAllBytes();
+                    Files.write(filePath, fileBytes, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
-                    //DB에도 파일 정보 저장
-                    s1000DMapper.insertFileInfo(entry.getName(), filePath.toString(), entry.getSize());
+                    // XML 파일인 경우 DB 메타데이터 저장
+                    String fileName = filePath.getFileName().toString();
+                    if (fileName.toLowerCase().endsWith(".xml")) {
+                        String dmcId = fileName.substring(0, fileName.lastIndexOf("."));
+                        String xmlContent = new String(fileBytes, StandardCharsets.UTF_8);
+
+                        Map<String, Object> fileInfo = new HashMap<>();
+                        fileInfo.put("dmcId", dmcId);
+                        fileInfo.put("xmlContent", xmlContent);
+                        fileInfo.put("filePath", filePath.toString());
+
+                        // MyBatis/JPA를 통한 DB 저장 (Transactional에 의해 일관성 보장)
+                        s1000DMapper.insertFileInfo(fileInfo);
+                    }
                 }
                 zis.closeEntry();
             }
         }
+        // 이 메서드가 종료되어야 컨트롤러에서 200 OK 응답을 보냅니다.
     }
 
     public List<Map<String, Object>> getModules(Map<String, Object> param) {
@@ -113,9 +126,12 @@ public class S1000DService {
         }
     }
 
-    public String getContent(String relativePath) throws IOException {
+    public Map<String, Object> getContent(Map<String, Object> param) throws IOException {
+        Map<String, Object> contentInfo = new HashMap<>();
+        
+        String path = (String) param.get("path");
         Path root = Paths.get(uploadRoot).toAbsolutePath().normalize();
-        Path filePath = root.resolve(relativePath).normalize();
+        Path filePath = root.resolve(path).normalize();
 
         // 보안: 루트 디렉토리 탈출 방지
         if (!filePath.startsWith(root)) {
@@ -123,15 +139,16 @@ public class S1000DService {
         }
 
         if (!Files.exists(filePath)) {
-            throw new IOException("파일을 찾을 수 없습니다: " + relativePath);
+            throw new IOException("파일을 찾을 수 없습니다: " + path);
         }
 
-        return Files.readString(filePath, StandardCharsets.UTF_8);
-    }
-
-    public JsonNode getJsonContent(String relativePath) throws IOException {
-        String xmlContent = getContent(relativePath);
+        System.out.println("param " + param); // 디버깅용 로그
+        List<Map<String, Object>> Json1 = s1000DMapper.getDescriptiveDm1(param);
+        List<Map<String, Object>> Json2 = s1000DMapper.getDescriptiveDm2(param);
         
-        return null;
+
+        contentInfo.put("json1", Json1);
+        contentInfo.put("json2", Json2);
+        return contentInfo;
     }
 }
