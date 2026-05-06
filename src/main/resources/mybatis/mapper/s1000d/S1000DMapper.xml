@@ -1,54 +1,85 @@
 <!DOCTYPE mapper PUBLIC "//mybatis.org/DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.example.back.mapper.s1000d.S1000DMapper">
+    <select id="selectCsdbList" parameterType="java.util.Map" resultType="map">
+        select csdb_id as id   
+              ,filename as name 
+              ,filesize as size
+              ,reg_date as date 
+          from csdb_master
+         where 1=1
+         <if test="csdbId != null and csdbId != ''">
+           and csdb_id = #{csdbId}
+         </if>
+    </select>
     
-    <select id="getDescriptiveDm1" parameterType="java.util.Map" resultType="map">
-        SELECT 
-            m.dmc_id,
-            xt.para_id,      -- 단락 ID (참조용)
-            xt.para_title,   -- 단락 제목 (General, 구조 등)
-            CAST(xt.para_content AS TEXT) as para_content -- 단락 내부의 실제 텍스트 및 하위 태그들
-        FROM csdb_data_modules m,
-        XMLTABLE('//*[local-name()="description"]/*[local-name()="levelledPara"]' PASSING m.content
-            COLUMNS 
-                para_id      TEXT PATH '@id',
-                para_title   TEXT PATH '*[local-name()="title"]',
-                -- para 태그들을 텍스트로 합쳐서 가져오거나 XML 통째로 가져옴
-                para_content XML  PATH '.' 
-        ) xt
-        WHERE m.dmc_id = #{dmcid}
+    <insert id="insertCsdbInfo" parameterType="java.util.Map">
+        insert into csdb_master (
+            csdb_id,
+            filename,
+            filesize,
+            reg_date
+        ) values (
+            #{csdb_id},
+            #{filename},
+            #{filesize},
+            NOW()
+        )
+    </insert>
+    
+    <!-- pmcTree 조회 쿼리 -->
+    <select id="selectPmc" parameterType="java.util.Map" resultType="map">
+        select dmc_id
+          from csdb_data_modules
+         where dmc_id like 'PMC'||'%'
     </select>
 
-    <select id="getDescriptiveDm2" parameterType="java.util.Map" resultType="map">
-        SELECT json_build_object(
-            'dmc', dmc_id,
-            'metadata', (
-                SELECT row_to_json(xt) FROM XMLTABLE('/dmodule/identAndStatusSection' PASSING content
-                    COLUMNS 
-                        techName TEXT PATH 'dmAddress/dmAddressItems/dmTitle/techName',
-                        infoName TEXT PATH 'dmAddress/dmAddressItems/dmTitle/infoName',
-                        security TEXT PATH 'dmStatus/security/@securityClassification'
+    <select id="getXmlContentById" parameterType="java.util.Map" resultType="map">
+            SELECT 
+                json_build_object(
+                    'dmc', dmc_id,
+                    
+                    -- 1. 메타데이터 (row_to_json 대신 json_build_object로 정교한 객체 생성)
+                    'metadata', (
+                        SELECT json_build_object(
+                                    'techName', xt.techName,
+                                    'infoName', xt.infoName,
+                                    'security', xt.security
+                        )
+                        FROM XMLTABLE(
+                            -- XML 내부 네임스페이스 무시 처리를 위해 local-name() 활용
+                            '//*[local-name()="identAndStatusSection"]' PASSING content
+                            COLUMNS 
+                                techName TEXT PATH './/*[local-name()="techName"]',
+                                infoName TEXT PATH './/*[local-name()="infoName"]',
+                                security TEXT PATH './/*[local-name()="dmStatus"]/*[local-name()="security"]/@securityClassification'
                 ) xt
+                LIMIT 1 -- 혹시 모를 다중 행 방지 및 스칼라 변환 보장
             ),
-            -- 본문(content) 태그만 쏙 뽑아서 문자열로 전달
+            
+            -- 2. 본문 XML 내용 그대로 문자열 변환
             'body_xml', (xpath('//*[local-name()="content"]', content))[1]::text
-        )::text as ietm_data 
+            
+        )::text AS ietm_data
         FROM csdb_data_modules 
-        WHERE dmc_id = #{dmcid}
+       WHERE replace(dmc_id, '-', '') like concat('%', replace(#{id}, '-', ''), '%')
     </select>
     
     <insert id="insertFileInfo">
         INSERT INTO csdb_data_modules (
-             dmc_id,
-             content,
-             updated_at 
+            csdb_id,
+            dmc_id,
+            content,
+            updated_at 
         ) VALUES (
-             #{dmcId},
-             #{xmlContent}::xml,
-             NOW()
+            #{csdb_id},
+            #{dmcId},
+            #{xmlContent}::xml,
+            NOW()
         )
-        ON CONFLICT (dmc_id) 
+        ON CONFLICT (csdb_id, dmc_id) 
         DO UPDATE SET
              content = EXCLUDED.content,
              updated_at = NOW()
     </insert>
+
 </mapper>

@@ -1,0 +1,62 @@
+<!DOCTYPE mapper PUBLIC "//mybatis.org/DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.back.mapper.board.BoardMapper">
+    <select id="select" parameterType="map" resultType="map">
+        SELECT board_id
+              ,category
+              ,title
+              ,content
+              ,author
+              ,COALESCE(use_yn, 'N') as use_yn
+              ,TO_CHAR(reg_date, 'YYYY-MM-DD') as reg_date
+              ,TO_CHAR(upt_date, 'YYYY-MM-DD') as upt_date 
+          FROM tb_board
+         WHERE 1=1
+        <if test="category != null and category != ''">
+           and category = #{category}
+        </if>
+        <if test="title != null and title != ''">
+           and title like CONCAT('%', #{title}, '%') 
+        </if>
+    </select>
+
+    <insert id="insert" parameterType="map">
+        <selectKey keyProperty="board_id" resultType="int" order="BEFORE">
+            SELECT COALESCE(MAX(board_id), 0) + 1 FROM tb_board
+        </selectKey>
+
+        INSERT INTO tb_board ( 
+            board_id,
+            category, 
+            title, 
+            content, 
+            author, 
+            use_yn,
+            reg_date
+        ) 
+        VALUES (
+            #{board_id},
+            #{category},
+            #{title}, 
+            #{content}, 
+            #{author}, 
+            COALESCE(#{use_yn}, 'N'),
+            now()
+        )
+        returning board_id
+    </insert>
+
+    <update id="update" parameterType="map">
+        UPDATE tb_board 
+           SET title = #{title}, 
+               content = #{content},
+               upt_date = now(),
+               use_yn = COALESCE(#{use_yn}, 'N')
+         WHERE board_id = #{board_id}        
+    </update>
+
+    <delete id="delete" parameterType="map">
+        DELETE 
+          FROM tb_board 
+         WHERE board_id = #{board_id}
+    </delete>
+</mapper>

@@ -1,6 +1,5 @@
 package com.example.back.controller.s1000d;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -12,7 +11,6 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.GetMapping;
 
 @RestController
@@ -21,6 +19,11 @@ public class S1000dController {
     
     @Autowired
     private S1000DService s1000DService;
+
+    @GetMapping("/csdb/select")
+    public List<Map<String, Object>> selectCsdbList(@RequestParam Map<String, Object> param) throws IOException {
+        return s1000DService.selectCsdbList(param);
+    }
 
     @PostMapping("/upload-csdb")
     public ResponseEntity<String> uploadAndUnzip(@RequestParam("file") MultipartFile file) {
@@ -32,28 +35,26 @@ public class S1000dController {
         }
     }
     
-    
-    @GetMapping("/test")
-    public List<Map<String, Object>> test(@RequestParam Map<String, Object> params) {
-        System.out.println("컨트롤러에서 받은 파라미터: " + params); // 디버깅용 로그
-        return null;
+    @GetMapping("/pmc/select")
+    public List<Map<String, Object>> selectPmc() throws IOException {
+        return s1000DService.selectPmc();
     }
 
-    @GetMapping("/getList")
-    public List<Map<String, Object>> getList(@RequestParam Map<String, Object> param) {
-        List<Map<String, Object>> rtnList = s1000DService.getModules(param);
+    @GetMapping("/pmc/tree")
+    public Map<String, Object> pmcTree(@RequestParam Map<String, Object> param) throws IOException {
+        return s1000DService.getXmlContentById(param);
+    }
+
+    @GetMapping("/dm/select")
+    public Map<String, Object> selectDmc(@RequestParam Map<String, Object> param) throws IOException {
+        return s1000DService.getXmlContentById(param);
+    }
+
+    @GetMapping("/getXmlContentByDmcId")
+    public Map<String, Object> getXmlContentByDmcId(@RequestParam Map<String, Object> param) throws IOException {
+        Map<String, Object> contents = s1000DService.getXmlContentById(param);
         //System.out.println("컨트롤러에서 반환할 모듈 리스트: " + rtnList); // 디버깅용 로그
-        return rtnList;
+        return contents;
     }
     
-    @PostMapping("/getContent")
-    public ResponseEntity<Map<String, Object>> getContent(@RequestBody Map<String, Object> param) {
-        try {
-            Map<String, Object> content = s1000DService.getContent(param);
-            return ResponseEntity.ok(content);
-        } catch (IOException | SecurityException e) {
-            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
-        }
-    }
-
 }
