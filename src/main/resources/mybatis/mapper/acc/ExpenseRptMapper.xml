@@ -1,0 +1,170 @@
+<!DOCTYPE mapper PUBLIC "//mybatis.org/DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.back.mapper.acc.ExpenseRptMapper">
+    <!-- 1. Master -->
+    <select id="selectAllExpenseReports" resultType="java.util.Map" parameterType="java.util.Map">
+        SELECT no, 
+               title, 
+               cast(cast(resolution_date as date) as text) AS report_date, 
+               dept_id as dept_code, 
+               budget_id as budget_code, 
+               create_by AS createBy, 
+               case
+               when status = '0' then '작성중'
+               when status = '1' then '임시저장'
+               when status = '2' then '결재대기'
+               when status = '3' then '승인완료'
+               else '반려' end as status,
+               status as status_code,
+               total_amount AS total_amount,
+               reject_opinion as opinion,
+               created_dt AS createdDt, 
+               updated_dt AS updatedDt
+          FROM tb_expense_resolutions
+         WHERE 1=1
+        <if test="no != null and no != ''">
+            AND no = #{no}
+        </if>
+        <if test="slip != null and slip != ''">
+            AND no not in( 
+                    select resolution_id from tb_slip_header
+                )
+        </if>
+        ORDER BY created_dt DESC
+    </select>
+
+    <insert id="insertExpenseReport" parameterType="java.util.Map">
+        <selectKey keyProperty="no" resultType="java.lang.String" order="BEFORE">
+            select coalesce(cast(cast(max(no) as numeric) + 1 as text), concat(replace(#{report_date}, '-', ''), lpad(1::text,4,'0')))
+              from tb_expense_resolutions
+             where 1=1
+               and resolution_date = replace(#{report_date}, '-', '')
+        </selectKey>
+        INSERT INTO tb_expense_resolutions (
+            no, 
+            title, 
+            resolution_date, 
+            dept_id, 
+            budget_id, 
+            create_by, 
+            status, 
+            total_amount, 
+            created_dt
+        ) VALUES (
+            #{no}, 
+            #{title}, 
+            replace(#{report_date},'-',''),
+            #{dept_code}, 
+            #{budget_code}, 
+            #{createBy}, 
+            COALESCE(#{status_code}, '0'), 
+            COALESCE(#{total_amount}, 0), 
+            CURRENT_TIMESTAMP
+        )
+    </insert>
+
+    <update id="updateExpenseReport" parameterType="java.util.Map">
+        UPDATE tb_expense_resolutions
+        <set>
+            <if test="title != null and title != ''">title = #{title},</if>
+            <if test="resolution_date != null">resolution_date = #{resolution_date},</if>
+            <if test="dept_id != null and dept_id != ''">dept_id = #{dept_id},</if>
+            <if test="budget_id != null and budget_id != ''">budget_id = #{budget_id},</if>
+            <if test="status_code != null and status_code != ''">status = #{status_code},</if>
+            <if test="total_amount != null">total_amount = #{total_amount},</if>
+            updated_dt = CURRENT_TIMESTAMP
+        </set>
+        WHERE no = #{no}
+    </update>   
+
+    <delete id="deleteExpenseReport" parameterType="java.util.Map">
+        DELETE FROM tb_expense_resolutions
+        WHERE no = #{no}
+    </delete>
+
+    <!-- 2. Detail CRUD (tb_expense_resolution_details) -->
+    <select id="getExpenseReportDetailsList" resultType="java.util.Map" parameterType="java.util.Map">
+        SELECT no, 
+               serial, 
+               acc_code AS acc_code, 
+               amount, 
+               remark AS remark
+          FROM tb_expense_resolution_details
+         WHERE 1=1
+           AND no = #{no}
+         ORDER BY serial ASC
+    </select>
+
+    <insert id="insertExpenseReportDetails" parameterType="java.util.Map">
+        <selectKey keyProperty="serial" resultType="java.lang.Integer" order="BEFORE">
+            select coalesce((select max(serial) as serial from tb_expense_resolution_details where 1=1 and no = #{no} group by no), 0) + 1 as max_serial
+        </selectKey>
+
+        INSERT INTO tb_expense_resolution_details (
+            no,
+            serial,
+            acc_code,
+            amount,
+            remark
+        ) VALUES (
+            #{no},
+            #{serial},
+            #{acc_code},
+            CAST(#{amount} AS NUMERIC),
+            #{remark}
+        )
+    </insert>
+
+    <update id="updateExpenseReportDetails" parameterType="java.util.Map">
+        UPDATE tb_expense_resolution_details
+           SET acc_code = #{acc_code},
+               amount = CAST(#{amount} AS NUMERIC),
+               remark = #{remark}
+        WHERE 1=1
+          AND no = #{no} 
+          AND serial = #{serial}
+    </update>
+
+    <delete id="deleteExpenseReportDetails" parameterType="java.util.Map">
+        DELETE 
+          FROM tb_expense_resolution_details
+         WHERE 1=1
+           AND no = #{no} 
+           AND serial = #{serial}
+    </delete>
+
+    <update id="updateApprovalStatus" parameterType="java.util.Map">
+        update tb_expense_resolutions
+           set status = #{status},
+            <choose>
+                <when test="status == 3">
+                    submit_opinion = #{opinion},
+                </when>
+                <when test="status == 4">
+                    reject_opinion = #{opinion},
+                </when>
+                <otherwise>
+                    submit_opinion = null,
+                    reject_opinion = null,
+                </otherwise>
+            </choose>     
+               updated_dt = CURRENT_TIMESTAMP  
+         where no = #{no}
+    </update>
+    
+    <update id="updateInitTotalAmount" parameterType="java.util.Map">
+        update tb_expense_resolutions
+           set total_amount = 0
+         where 1=1
+           and no = #{no}
+    </update>
+
+    <update id="updateTotalAmount" parameterType="java.util.Map">
+        update tb_expense_resolutions
+           set total_amount = (total_amount + cast(#{amount} as integer))
+         where 1=1
+           and no = #{no}
+    </update>
+   
+
+
+</mapper>

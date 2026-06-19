@@ -11,6 +11,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.GetMapping;
 
 @RestController
@@ -25,6 +26,11 @@ public class S1000dController {
         return s1000DService.selectCsdbList(param);
     }
 
+    @PostMapping("/csdb/delete")
+    public int deleteCsdb(@RequestBody Map<String, Object> param) throws IOException {
+        return s1000DService.deleteCsdb(param);
+    }
+
     @PostMapping("/upload-csdb")
     public ResponseEntity<String> uploadAndUnzip(@RequestParam("file") MultipartFile file) {
         try {
@@ -36,8 +42,9 @@ public class S1000dController {
     }
     
     @GetMapping("/pmc/select")
-    public List<Map<String, Object>> selectPmc() throws IOException {
-        return s1000DService.selectPmc();
+    public List<Map<String, Object>> selectPmc(@RequestParam Map<String, Object> param) throws IOException {
+        System.out.println("PMC 선택 파라미터: " + param); // 디버깅용 로그
+        return s1000DService.selectPmc(param);
     }
 
     @GetMapping("/pmc/tree")

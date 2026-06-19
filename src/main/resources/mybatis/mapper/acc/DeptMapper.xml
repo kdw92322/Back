@@ -1,0 +1,77 @@
+<!DOCTYPE mapper PUBLIC "//mybatis.org/DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.back.mapper.acc.DeptMapper">
+
+    <!-- 1. 부서 등록 -->
+    <insert id="insertDept" parameterType="com.example.back.dto.DeptDto">
+        INSERT INTO tb_dept (
+            dept_code, 
+            parent_code,
+            dept_name, 
+            sort_order, 
+            use_yn
+        ) VALUES (
+            #{deptCode},
+            #{parentCode},
+            #{deptName}, 
+            COALESCE(#{sortOrder}, 10),
+            COALESCE(#{useYn}, 'Y')
+        )
+    </insert>
+
+    <!-- 2. 부서 중복 체크 -->
+    <select id="checkDeptCodeExists" parameterType="string" resultType="int">
+        SELECT COUNT(*) 
+          FROM tb_dept 
+        WHERE dept_code = #{deptCode}
+    </select>
+
+    <!-- 3. 전체 부서 목록 조회 (정렬순서 오름차순, 부서명 오름차순) -->
+    <select id="selectAllDepts" resultType="com.example.back.dto.DeptDto">
+        SELECT 
+            dept_code AS deptCode,
+            parent_code AS parentCode,
+            dept_name AS deptName,
+            sort_order AS sortOrder,
+            use_yn AS useYn,
+            created_at AS createdAt,
+            updated_at AS updatedAt
+        FROM tb_dept
+       where 1=1
+         and use_yn = 'Y'
+            <if test="parent_code != null and parent_code != ''">
+                AND parent_code = #{parent_code}
+            </if> 
+        ORDER BY sort_order ASC, dept_name ASC
+    </select>
+
+    <!-- 4. 부서 정보 수정 (동적 쿼리를 활용해 넘어온 값만 수정) -->
+    <update id="updateDept" parameterType="com.example.back.dto.DeptDto">
+        UPDATE tb_dept
+        <set>
+            <if test="deptName != null and deptName != ''">dept_name = #{deptName},</if>
+            <if test="sortOrder != null">sort_order = #{sortOrder},</if>
+            <if test="useYn != null and useYn != ''">use_yn = #{useYn},</if>
+            <if test="parentCode != null and parentCode != ''">parent_code = #{parentCode},</if>
+            updated_at = NOW()
+        </set>
+        WHERE dept_code = #{deptCode}
+    </update>
+
+    <!-- 5. 부서 완전히 삭제 -->
+    <delete id="deleteDept" parameterType="string">
+        DELETE FROM tb_dept 
+        WHERE dept_code = #{deptCode}
+    </delete>
+
+    <select id="selectComboDepts" resultType="com.example.back.dto.DeptDto">
+        SELECT 
+            dept_code AS deptCode,
+            dept_name AS deptName
+        FROM tb_dept
+        where 1=1
+        and use_yn = 'Y'
+        and parent_code != 'ROOT'
+        ORDER BY sort_order ASC, dept_name ASC
+    </select>
+
+</mapper>

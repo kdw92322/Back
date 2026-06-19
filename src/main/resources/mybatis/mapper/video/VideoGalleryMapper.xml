@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/xml/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.back.mapper.video.VideoGalleryMapper">
+
+    <select id="getNextVideoId" resultType="Integer">
+        select coalesce(max(id), 0) + 1 as newid from tb_videos
+    </select>
+
+    <insert id="insertVideo" parameterType="com.example.back.model.VideoGallery" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO tb_videos (
+            id,
+            title, 
+            video_type, 
+            youtube_video_id, 
+            file_url, 
+            description,
+            duration,
+            views,
+            thumbnail,
+            created_by, 
+            created_at
+        )VALUES (
+            #{id},
+            #{title}, 
+            #{videoType}, 
+            #{youtubeVideoId}, 
+            #{fileUrl}, 
+            #{description}, 
+            #{duration},
+            #{views},
+            #{thumbnail},
+            #{createdBy}, 
+            now()
+        )
+    </insert>
+
+    <select id="selectVideoList" parameterType="com.example.back.model.VideoGallery" resultType="com.example.back.model.VideoGallery">
+        SELECT id, 
+            title, 
+            video_type as videoType, 
+            youtube_video_id as youtubeVideoId, 
+            file_url as fileUrl,
+            description, 
+            duration as duration, 
+            views as views,
+            thumbnail, 
+            created_by as createdBy,
+            created_at as createdAt
+        FROM tb_videos
+       WHERE 1=1 
+        <if test="id != null and id != ''">
+         AND id = CAST(#{id} AS INTEGER)
+        </if>
+       ORDER BY created_at DESC
+    </select>
+
+    <delete id="deleteVideo" parameterType="int">
+        DELETE FROM tb_videos WHERE id = #{id}
+    </delete>
+
+</mapper>

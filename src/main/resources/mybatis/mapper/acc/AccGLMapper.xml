@@ -1,0 +1,90 @@
+<!DOCTYPE mapper PUBLIC "//mybatis.org/DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.back.mapper.acc.AccGLMapper">
+    <select id="selectGLAccList" parameterType="map" resultType="map">
+        WITH RECURSIVE temp AS (
+            SELECT code, 
+                name, 
+                cast(budgetlevel as integer) as level, 
+                ARRAY[name::text] as path_arr
+            FROM tb_budget_category
+            WHERE parent_code = '0' 
+            
+            UNION ALL
+            
+            SELECT t.code, 
+                t.name, 
+                cast(t.budgetlevel as integer) as level, 
+                r.path_arr || t.name::text  as path_arr
+            FROM tb_budget_category t
+            INNER JOIN temp r ON t.parent_code  = r.code
+        )
+        , ACC_LIST AS (
+            -- 3. 최종 출력
+            SELECT a.code as budget_code,
+                REPEAT('  ', a.level - 1) || a.name AS name_view, -- 시각적 들여쓰기
+                a.level,
+                array_to_string(a.path_arr, ' > ') AS full_path,
+                b.code as acc_code,
+                b.name as acc_name,
+                b.dr_cr_div as dr_cr
+            FROM temp a
+           inner join tb_account_category b on a.code = b.budget_code
+           where 1=1
+             and b.code in (
+                select c.acc_code
+                  from tb_slip_detail c
+                 inner join tb_slip_header d on c.slip_id = d.slip_id
+                 where 1=1
+                   and d.status = '2' -- 승인완료 건만
+             ) 
+        ) 
+        select acc_code, concat('[', full_path, ']', acc_name) as acc_name, dr_cr
+          from ACC_LIST
+         order by acc_code
+    </select>    
+
+    <select id="selectGLList" parameterType="map" resultType="map">
+        with slip as ( 
+            select a.slip_date
+                  ,a.slip_id
+                  ,b.acc_code
+                  ,c."name" as acc_name
+                  ,c.budget_code
+                  ,b.detail_id 
+                  ,b.summary
+                  ,b.dr_cr
+                  ,coalesce(case when b.dr_cr = 'D' then b.amount end , 0) as d_amt
+                  ,coalesce(case when b.dr_cr = 'C' then b.amount end, 0) as c_amt
+                  ,d.amount 
+              from tb_slip_header a
+              left outer join tb_slip_detail b on a.slip_id = b.slip_id
+              left outer join tb_account_category c on b.acc_code = c.code 
+              left outer join tb_budget_category d on c.budget_code = d.code 
+             where 1=1 
+               and #{start_date} <![CDATA[<=]]> a.slip_date 
+               and a.slip_date <![CDATA[<=]]> #{end_date}
+            <if test="acc_code != null and acc_code != ''">
+               and b.acc_code = #{acc_code}
+            </if>
+             order by a.slip_id, b.dr_cr desc
+        )
+        select s.slip_date 
+              ,s.slip_id 
+              ,s.acc_code 
+              ,s.acc_name 
+              ,s.budget_code 
+              ,s.detail_id 
+              ,s.summary as description
+              ,s.dr_cr
+              ,s.d_amt as dr_amount
+              ,s.c_amt as cr_amount
+              ,case
+               when s.dr_cr = 'C' then s.amount 
+               else s.d_amt end as finalBalance
+              ,case
+               when s.dr_cr = 'C' then s.c_amt + s.amount 
+               else 0 end as base_balance  
+          from slip s
+    </select>
+    
+</mapper>

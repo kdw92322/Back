@@ -1,0 +1,97 @@
+<!DOCTYPE mapper PUBLIC "//mybatis.org/DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.back.mapper.slip.SlipMapper">
+
+    <select id="selectNewSlipId" parameterType="map" resultType="String">
+        select 'SLIP-'||replace(#{slip_date}, '-', '')||'-'||lpad(cast(count(*) + 1 as text), 4, '0') as seq
+          from tb_slip_header
+         where slip_date = #{slip_date}
+    </select>
+
+    <!-- 1. Slip Master -->
+    <insert id="insertSlipMaster" parameterType="map">
+        insert into tb_slip_header (
+            slip_id,
+            slip_date,
+            slip_type,
+            description,
+            resolution_id,
+            status,
+            created_by,
+            created_at
+        ) values (
+            #{slip_id},
+            #{slip_date},
+            #{slip_type},
+            #{description},
+            #{resolution_id},
+            #{status},
+            #{created_by},
+            now()
+        )
+    </insert>
+
+    <update id="updateSlipMaster" parameterType="map">
+        update tb_slip_header 
+           set slip_date = #{slip_date}
+              ,slip_type = #{slip_type}
+              ,description = #{description}
+              ,resolution_id = #{resolution_id}
+              ,status = #{status}
+              ,created_by = #{created_by}
+              ,updated_at = now()
+         where 1=1
+           and slip_id = #{slipId}
+    </update>
+
+    <delete id="deleteSlipMaster" parameterType="map">
+        delete 
+          from tb_slip_header 
+         where slip_id = #{slipId}    
+    </delete>
+
+    <!-- 2. Slip Detail -->       
+    <insert id="insertSlipDetail" parameterType="map">
+        <selectKey keyProperty="detail_id" order="BEFORE" resultType="int">
+          select count(*) + 1 as serial
+            from tb_slip_detail 
+           where slip_id = #{slip_id}
+        </selectKey>
+
+        INSERT INTO tb_slip_detail(
+            slip_id, 
+            detail_id, 
+            acc_code, 
+            dr_cr, 
+            amount, 
+            summary,             
+            created_at
+        ) VALUES(
+            #{slip_id},
+            #{detail_id},
+            #{acc_code},
+            #{dr_cr},
+            #{amount},
+            #{remark},
+            now()
+        )
+    </insert>
+
+    <update id="updateSlipDetail" parameterType="map">
+        update tb_slip_detail
+           set acc_code = #{acc_code},
+               dr_cr = #{dr_cr},
+               amount = #{amount},
+               summary = #{remark}
+         where 1=1
+           and slip_id = #{slip_id}
+           and detail_id = #{detail_id}
+    </update>
+
+    <delete id="deleteSlipDetail" parameterType="map">
+        delete 
+          from tb_slip_detail 
+         where slip_id = #{slip_id}
+           and etail_id = #{detail_id}
+    </delete>
+
+</mapper>

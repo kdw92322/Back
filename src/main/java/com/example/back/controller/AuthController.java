@@ -30,6 +30,16 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refresh(@RequestHeader("Authorization") String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new IllegalArgumentException("Invalid authorization header");
+        }
+        String token = authHeader.substring(7);
+        AuthResponse response = authService.refreshToken(token);
+        return ResponseEntity.ok(response);
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<String> handleBadRequests(IllegalArgumentException ex) {
         return ResponseEntity.badRequest().body(ex.getMessage());

@@ -1,0 +1,63 @@
+<!DOCTYPE mapper PUBLIC "//mybatis.org/DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.back.mapper.slip.SlipCfmMapper">
+    
+    <select id="list" parameterType="map" resultType="map">
+         select  a.slip_id
+                ,a.slip_date
+                ,a.slip_type
+                ,a.description
+                ,a.resolution_id
+                ,b.budget_id as budget_code
+                ,a.status
+                ,a.created_by
+                ,a.confirmed_by
+                ,a.confirmed_at
+            from tb_slip_header a
+            left outer join tb_expense_resolutions b on a.resolution_id = b.no
+        where 1=1 
+        order by slip_id desc
+    </select>
+
+    <select id="details" parameterType="map" resultType="map">
+        select a.slip_id
+            ,a.detail_id
+            ,a.acc_code
+            ,a.dr_cr
+            ,a.amount 
+            ,b."name" as acc_name
+            ,a.summary as remark
+        from tb_slip_detail a
+        left outer join tb_account_category b on a.acc_code = b.code
+       where a.slip_id = #{slip_id}
+    </select>
+
+    <update  id="approve" parameterType="map">
+        update tb_slip_header
+           set status = '1'
+              ,confirmed_by = #{confirmed_by}
+              ,confirmed_at = now()
+         where slip_id = #{slip_id}
+    </update>       
+
+    <update  id="reject" parameterType="map">
+        update tb_slip_header
+           set status = '3'
+         where slip_id = #{slip_id}
+    </update> 
+
+    <update  id="confirm" parameterType="map">
+        update tb_slip_header
+           set status = '2'
+              ,confirmed_by = #{confirmed}
+              ,confirmed_at = now()
+         where slip_id = #{slip_id}
+    </update> 
+
+    <update  id="confirmCalcBudget" parameterType="map">
+        update tb_budget_category
+           set amount = amount - #{amt}
+         where 1=1
+           and code = #{budget_code}
+    </update> 
+
+</mapper>

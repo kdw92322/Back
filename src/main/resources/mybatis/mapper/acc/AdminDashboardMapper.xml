@@ -1,0 +1,23 @@
+<!DOCTYPE mapper PUBLIC "//mybatis.org/DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.back.mapper.acc.AdminDashboardMapper">
+    <select id="getExecDeptAmount" parameterType="map" resultType="map">
+        
+    </select>
+
+    <select id="getDeptBudgetInfo" parameterType="map" resultType="map">
+        
+    </select>
+
+    <select id="getExecTotal" parameterType="map" resultType="map">
+        
+    </select>
+
+    <select id="getBudgetExecInfo" parameterType="map" resultType="map">
+        
+    </select>
+
+
+
+
+
+</mapper>

@@ -65,4 +65,15 @@ public class AuthService {
         String token = jwtService.generateToken(userDetails);
         return new AuthResponse(token);
     }
+
+    public AuthResponse refreshToken(String token) {
+        String userId = jwtService.extractUsername(token);
+        UserDetails userDetails = userDetailsService.loadUserByUsername(userId);
+        
+        if (jwtService.isTokenValid(token, userDetails)) {
+            String newToken = jwtService.generateToken(userDetails);
+            return new AuthResponse(newToken);
+        }
+        throw new IllegalArgumentException("Invalid or expired token");
+    }
 }

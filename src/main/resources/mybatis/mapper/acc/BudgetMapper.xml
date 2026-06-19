@@ -1,0 +1,180 @@
+<!DOCTYPE mapper PUBLIC "//mybatis.org/DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.back.mapper.acc.BudgetMapper">
+
+    <!-- 1. 예산 과목 중복 체크 -->
+    <select id="checkBudgetCodeExists" parameterType="string" resultType="int">
+        SELECT COUNT(*) 
+        FROM tb_budget_category 
+        WHERE code = #{budgetCode}
+    </select>
+
+    <!-- 2. 예산 과목 등록 -->
+    <insert id="insertBudget" parameterType="com.example.back.dto.BudgetDto" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO tb_budget_category (
+            code, 
+            name, 
+            parent_code,
+            budgetLevel,
+            is_use, 
+            description,
+            amount
+        ) VALUES (
+            #{budgetCode}, 
+            #{budgetName}, 
+            Coalesce(#{parentCode}, '0'),
+            #{budgetLevel},
+            #{useYn},
+            #{remarks},
+            #{amount}
+        )
+    </insert>
+
+    <!-- 3. 예산 과목 수정 -->
+    <update id="updateBudget">
+        UPDATE tb_budget_category
+        <set>
+            <if test="budgetName != null and budgetName != ''">name = #{budgetName},</if>
+            <if test="parentCode != null">parent_code = #{parentCode},</if>
+            <if test="budgetLevel != null">budgetLevel = #{budgetLevel},</if>
+            <if test="useYn != null and useYn != ''">is_use = #{useYn},</if>
+            <if test="remarks != null">description = #{remarks},</if>
+            <if test="amount != null">amount = #{amount},</if>
+        </set>
+        WHERE code = #{budgetCode}
+    </update>
+
+    <!-- 4. 예산 과목 삭제 -->
+    <delete id="deleteBudget">
+        DELETE FROM tb_budget_category 
+        WHERE code = #{budget_code}
+    </delete>
+    
+    <!-- 5. 예산 과목 목록 조회 -->
+    <select id="selectAllBudgets" resultType="com.example.back.dto.BudgetDto">
+        SELECT 
+            id,
+            code AS budgetCode,
+            name AS budgetName,
+            parent_code AS parentCode,
+            budgetLevel,
+            is_use AS useYn,
+            description AS remarks,
+            amount
+        FROM tb_budget_category
+       WHERE 1=1 
+       <if test="searchKeyword != null and searchKeyword != ''">
+         AND name LIKE CONCAT('%', #{searchKeyword}, '%')
+       </if>
+       <if test="parent_code != null and parent_code != ''">
+         AND parent_code = #{parent_code}
+       </if>
+       <if test="use_yn != null and use_yn != ''">
+         AND is_use = #{use_yn}
+       </if>
+        ORDER BY code ASC
+    </select>
+
+    <!-- 6. ID로 상세 조회 -->
+    <select id="selectBudgetById" parameterType="int" resultType="com.example.back.dto.BudgetDto">
+        SELECT 
+            id, code AS budgetCode, name AS budgetName, budgetLevel, amount
+        FROM tb_budget_category
+        WHERE id = #{id}
+    </select>
+
+    <!-- 7-1. 예산집행 현황 - 상세 List-->
+    <select id="selectExecStat" parameterType="map" resultType="map">
+        with exec_budget as (
+            select a.slip_id
+                  ,to_char(to_date(a.slip_date, 'YYYYMMDD'), 'YYYY') as slip_year 
+                  ,c.budget_code
+                  ,concat(d.name,'[', c.name, ']') as budget_name
+                  ,b.dr_cr
+                  ,case
+                   when b.dr_cr = 'D' then '차변'	
+                   else '대변' end as dr_cr_nm
+                  ,e.dept_id 
+                  ,b.acc_code 
+                  ,d.amount as remain_amt
+                  ,sum(case when b.dr_cr = 'D' then b.amount else 0 end) over(partition by c.budget_code, e.dept_id) as budget_amt -- 예산액
+                  ,b.amount 
+              from tb_slip_header a
+              inner join tb_slip_detail b on a.slip_id = b.slip_id
+              left outer join tb_account_category c on b.acc_code = c.code 
+              left outer join tb_budget_category d on c.budget_code = d.code
+              left outer join tb_expense_resolutions e on a.resolution_id = e.no
+             where 1=1
+               and b.dr_cr = 'D'
+            <if test="dept_code != null and dept_code != ''">
+               and e.dept_id = #{dept_code}
+            </if>  
+        ), calc as (
+            select e.budget_code
+                  ,e.budget_name
+                  ,e.slip_id
+                  ,e.slip_year
+                  ,e.dr_cr
+                  ,e.dr_cr_nm
+                  ,e.dept_id
+                  ,e.remain_amt + e.budget_amt as amount
+                  ,e.amount as exec_amount
+                  ,(e.remain_amt + e.budget_amt) - SUM(case when e.dr_cr = 'D' then e.amount else 0 end) OVER(PARTITION BY e.budget_code ORDER BY e.slip_id asc, e.budget_name asc ) as balance
+              from exec_budget e
+        )
+        select slip_year
+              ,slip_id
+              ,budget_code
+              ,budget_name
+              ,dr_cr
+              ,dr_cr_nm
+              ,dept_id
+              ,amount
+              ,exec_amount
+              ,balance
+              ,round((1 - balance/amount)*100, 1) as exec_rate
+          from calc
+         where 1=1
+        <if test="year != null and year != ''">
+           and slip_year = #{year}
+        </if>
+         order by budget_code
+    </select>
+
+    <!-- 7-2. 예산집행 현황 - 총 금액 합계-->
+    <select id="selectExecTotal" parameterType="map" resultType="map">
+        with total_budget_amt as (
+            select bc.code as budget_code, bc.amount + sum(er.total_amount) as budget_total
+              from tb_expense_resolutions er
+              left outer join tb_budget_category bc on er.budget_id = bc.code
+             where er.status = '3' -- 승인 완료된 건만
+            <if test="dept_code != null and dept_code != ''">
+               and er.dept_id = #{dept_code}
+            </if>
+            group by bc.code, bc.amount
+        ), total_exec_amt as (
+            select a.budget_id as budget_code
+                ,TO_CHAR(TO_DATE(replace(b.slip_date,'-',''), 'YYYYMMDD'), 'YYYY') as sh_year
+                ,sum(c.amount) as exec_total
+              from tb_expense_resolutions a
+              inner join tb_slip_header b on a.no = b.resolution_id
+              inner join tb_slip_detail c on b.slip_id = c.slip_id and c.dr_cr = 'D'
+             where 1=1
+            <if test="dept_code != null and dept_code != ''">
+               and dept_id = #{dept_code}
+            </if>
+            group by a.budget_id, TO_CHAR(TO_DATE(replace(b.slip_date,'-',''), 'YYYYMMDD'), 'YYYY') 
+        )
+        select a.budget_code
+            ,a.budget_total
+            ,b.exec_total
+            ,ROUND((b.exec_total/a.budget_total)*100, 1) as rate
+        from total_budget_amt a
+        left outer join total_exec_amt b on a.budget_code = b.budget_code
+       where 1=1
+        <if test="year != null and year != ''">
+         and b.sh_year = #{year}
+        </if>
+
+
+    </select>
+</mapper>

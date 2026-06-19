@@ -29,10 +29,12 @@ public class UserService {
         String pwd = String.valueOf(saveMap.get("password"));
         saveMap.put("password", passwordEncoder.encode(pwd));
 
-        System.out.println("saveMap : " + saveMap.toString());
         return userMapper.insert(saveMap);
     }
     public int update(Map<String, Object> saveMap) {
+        String pwd = String.valueOf(saveMap.get("password"));
+        saveMap.put("password", passwordEncoder.encode(pwd));
+
         return userMapper.update(saveMap);
     }
     public int delete(Map<String, Object> saveMap) {

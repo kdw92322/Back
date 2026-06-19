@@ -1,8 +1,9 @@
 <!DOCTYPE mapper PUBLIC "//mybatis.org/DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.example.back.mapper.s1000d.S1000DMapper">
     <select id="selectCsdbList" parameterType="java.util.Map" resultType="map">
-        select csdb_id as id   
-              ,filename as name 
+        select (row_number() over()) as rownum
+              ,csdb_id as id   
+              ,split_part(filename,'.',1) as name 
               ,filesize as size
               ,reg_date as date 
           from csdb_master
@@ -11,7 +12,7 @@
            and csdb_id = #{csdbId}
          </if>
     </select>
-    
+
     <insert id="insertCsdbInfo" parameterType="java.util.Map">
         insert into csdb_master (
             csdb_id,
@@ -26,11 +27,28 @@
         )
     </insert>
     
+    <delete id="deleteCsdb" parameterType="java.util.Map">
+        delete 
+          from csdb_master
+         where csdb_id = (
+            select csdb_id
+              from csdb_master
+            where replace(filename,'.zip','') = #{csdb_id}
+         ) 
+    </delete>
+    
     <!-- pmcTree 조회 쿼리 -->
     <select id="selectPmc" parameterType="java.util.Map" resultType="map">
         select dmc_id
           from csdb_data_modules
-         where dmc_id like 'PMC'||'%'
+         where csdb_id = (
+            select csdb_id
+              from csdb_master cm
+             where 1=1
+               and cm.filename like concat('%', #{csdb_name}, '%')
+         )
+           and dmc_id like concat('PMC','%')
+         order by dmc_id    
     </select>
 
     <select id="getXmlContentById" parameterType="java.util.Map" resultType="map">
@@ -69,16 +87,40 @@
             csdb_id,
             dmc_id,
             content,
+            file_path,
             updated_at 
         ) VALUES (
             #{csdb_id},
             #{dmcId},
             #{xmlContent}::xml,
+            #{filePath},
             NOW()
         )
         ON CONFLICT (csdb_id, dmc_id) 
         DO UPDATE SET
              content = EXCLUDED.content,
+             updated_at = NOW()
+    </insert>
+
+    <!-- ICN(이미지) 정보 저장 쿼리 -->
+    <insert id="insertIcnInfo" parameterType="java.util.Map">
+        INSERT INTO csdb_icn (
+            csdb_id,
+            icn_id,
+            filename,
+            content,
+            updated_at 
+        ) VALUES (
+            #{csdb_id},
+            #{icnId},
+            #{filename},
+            #{content},
+            NOW()
+        )
+        ON CONFLICT (csdb_id, icn_id) 
+        DO UPDATE SET
+             content = EXCLUDED.content,
+             filename = EXCLUDED.filename,
              updated_at = NOW()
     </insert>
 

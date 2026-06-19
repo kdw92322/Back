@@ -8,6 +8,7 @@
               ,a.email
               ,COALESCE(a.status,'IA') as status
               ,a.phone
+              ,a.dept_code
           FROM user_info a
          WHERE 1=1
          <if test="id != null">
@@ -27,6 +28,7 @@
             phone,
             role,
             status,
+            dept_code,
             reg_date
         ) VALUES (
             #{id},
@@ -36,19 +38,23 @@
             #{phone},
             #{role},
             COALESCE(#{status},'A'),
+            #{dept_code},
             NOW()
         )
     </insert>
 
     <update id="update" parameterType="java.util.Map">
         UPDATE user_info
-        SET name = #{userName},
-            password = #{password},
-            email = #{email},
-            phone = #{phone},
-            role = #{role},
-            status = #{status}
-        WHERE id = #{id}
+        <set>
+            <if test="name != null and name != ''">name = #{name},</if>
+            <if test="password != null">password = #{password},</if>
+            <if test="email != null and email != ''">email = #{email},</if>
+            <if test="phone != null and phone != ''">phone = #{phone},</if>
+            <if test="role != null and role != ''">role = #{role},</if>
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="dept_code != null and dept_code != ''">dept_code = #{dept_code}</if>
+        </set>
+         WHERE id = #{id}
     </update>
 
     <delete id="delete" parameterType="java.util.Map">
