@@ -9,15 +9,44 @@
     </select>
 
     <select id="getExecTotal" parameterType="map" resultType="map">
-        
+        with total_amt as (
+            select sum(a.amount + COALESCE(b.total_amount, 0)) as budget_total
+                ,sum(COALESCE(b.total_amount, 0)) as exec_total
+            from tb_budget_category a
+            left outer join (
+                select budget_id
+                    ,sum(total_amount) as total_amount
+                from tb_expense_resolutions 
+                group by budget_id
+            ) b on a.code = b.budget_id 
+        ) 
+        select budget_total
+            ,exec_total
+            ,round((exec_total/budget_total)*100, 1) as rate
+        from total_amt
+    </select>
+
+    <select id="getDeptbyExecTotalList" parameterType="map" resultType="map">
+        with calc as (
+            select a.dept_id
+                ,a.budget_id
+                ,b.dept_name 
+                ,sum(a.total_amount + c.amount) as amount
+                ,sum(a.total_amount) as exec_amount
+                ,sum(c.amount) as remain_amount
+            from tb_expense_resolutions a
+            left outer join tb_dept b on a.dept_id = b.dept_code 
+            inner join tb_budget_category c on a.budget_id = c.code
+            group by a.dept_id, a.budget_id, b.dept_name  
+        ) 
+        select dept_id, budget_id, dept_name, amount, exec_amount, remain_amount
+        from calc
+ 
+ 
     </select>
 
     <select id="getBudgetExecInfo" parameterType="map" resultType="map">
         
     </select>
-
-
-
-
 
 </mapper>

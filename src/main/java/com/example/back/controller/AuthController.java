@@ -41,7 +41,7 @@ public class AuthController {
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<String> handleBadRequests(IllegalArgumentException ex) {
-        return ResponseEntity.badRequest().body(ex.getMessage());
+    public ResponseEntity<java.util.Map<String, String>> handleBadRequests(IllegalArgumentException ex) {
+        return ResponseEntity.badRequest().body(java.util.Map.of("message", ex.getMessage()));
     }
 }

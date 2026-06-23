@@ -16,11 +16,11 @@ public class SystemUrlProvider {
         try {
             // 현재 서버의 로컬 IP 주소 추출
             String ip = InetAddress.getLocalHost().getHostAddress();
-            
-            return "http://" + ip + ":" + port + "/api";
+
+            return "http://" + ip + ":" + port;
         } catch (UnknownHostException e) {
             // IP를 못 찾을 경우 fallback 처리
-            return "http://localhost:" + port + "/api";
+            return "http://localhost:" + port;
         }
     }
 }

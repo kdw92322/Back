@@ -16,33 +16,25 @@ public class AdminDashboardController {
     private AdminDashboardService adminDashboardService;
 
     @GetMapping("/exec-dept-amount")
-    public Map<String, Object> getExecDeptAmount(
-            @RequestParam(required = false) String shYear,
-            @RequestParam(required = false) String shDeptCode) {
+    public Map<String, Object> getExecDeptAmount(@RequestParam(required = false) Map<String, Object> param) {
 
-        return adminDashboardService.getExecDeptAmount(shYear, shDeptCode);
+        return adminDashboardService.getExecDeptAmount(param);
     }
 
     @GetMapping("/dept-budget-info")
-    public Map<String, Object> getDeptBudgetInfo(
-            @RequestParam(required = false) String shYear,
-            @RequestParam(required = false) String shDeptCode) {
+    public Map<String, Object> getDeptBudgetInfo(Map<String, Object> param) {
 
-        return adminDashboardService.getDeptBudgetInfo(shYear, shDeptCode);
+        return adminDashboardService.getDeptBudgetInfo(param);
     }
 
     @GetMapping("/exec-total")
-    public Map<String, Object> getExecTotal(
-            @RequestParam(required = false) String shYear,
-            @RequestParam(required = false) String shDeptCode) {
-
-        return adminDashboardService.getExecTotal(shYear, shDeptCode);
+    public Map<String, Object> getExecTotal(@RequestParam(required = false) Map<String, Object> param) {
+        return adminDashboardService.getExecTotal(param);
     }
 
     @GetMapping("/budget-exec-info")
-    public Map<String, Object> getBudgetExecInfo(
-            @RequestParam(required = false) String year) {
+    public Map<String, Object> getBudgetExecInfo(@RequestParam(required = false) Map<String, Object> param) {
 
-        return adminDashboardService.getBudgetExecInfo(year);
+        return adminDashboardService.getBudgetExecInfo(param);
     }
 }

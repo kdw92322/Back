@@ -8,8 +8,12 @@ import java.util.Map;
 @Mapper
 public interface VideoGalleryMapper {
     int getNextVideoId();
+
     int insertVideo(VideoGallery video);
+
     List<VideoGallery> selectVideoList();
+
     VideoGallery selectVideoList(Map<String, Object> params);
-    int deleteVideo(String id);
+
+    int deleteVideo(int id);
 }

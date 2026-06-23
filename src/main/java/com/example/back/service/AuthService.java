@@ -25,10 +25,10 @@ public class AuthService {
     private final UserDetailsService userDetailsService;
 
     public AuthService(UserRepository userRepository,
-                       PasswordEncoder passwordEncoder,
-                       AuthenticationManager authenticationManager,
-                       JwtService jwtService,
-                       UserDetailsService userDetailsService) {
+            PasswordEncoder passwordEncoder,
+            AuthenticationManager authenticationManager,
+            JwtService jwtService,
+            UserDetailsService userDetailsService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
@@ -41,7 +41,8 @@ public class AuthService {
             throw new IllegalArgumentException("Id already exists");
         }
 
-        User user = new User(request.getId(), passwordEncoder.encode(request.getPassword()), request.getName(), "ROLE_USER");
+        User user = new User(request.getId(), passwordEncoder.encode(request.getPassword()), request.getName(),
+                "ROLE_USER");
         userRepository.save(user);
 
         // 회원가입 후 DB에서 권한 정보를 포함한 UserDetails 로드
@@ -54,8 +55,7 @@ public class AuthService {
         Authentication authentication;
         try {
             authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.getId(), request.getPassword())
-            );
+                    new UsernamePasswordAuthenticationToken(request.getId(), request.getPassword()));
         } catch (AuthenticationException e) {
             throw new IllegalArgumentException("Invalid username or password");
         }
@@ -69,7 +69,7 @@ public class AuthService {
     public AuthResponse refreshToken(String token) {
         String userId = jwtService.extractUsername(token);
         UserDetails userDetails = userDetailsService.loadUserByUsername(userId);
-        
+
         if (jwtService.isTokenValid(token, userDetails)) {
             String newToken = jwtService.generateToken(userDetails);
             return new AuthResponse(newToken);

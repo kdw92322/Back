@@ -1,4 +1,4 @@
-package com.example.back.service.notice;
+package com.example.back.service.notice.impl;
 
 import java.util.List;
 import java.util.Map;
@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.back.mapper.notice.NoticeMapper;
+import com.example.back.service.notice.NoticeService;
+
 import lombok.RequiredArgsConstructor;
 
 @Service
