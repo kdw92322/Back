@@ -16,6 +16,10 @@ public class AccDeptServiceImpl implements AccDeptService {
     @Autowired
     private DeptMapper deptMapper;
 
+    public String getCodes(String deptName) {
+        return deptMapper.getCodes(deptName);
+    }
+
     public int checkDeptCodeExists(String deptCode) {
         return deptMapper.checkDeptCodeExists(deptCode);
     }

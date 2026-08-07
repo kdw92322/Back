@@ -11,12 +11,21 @@
               ,a.dept_code
           FROM user_info a
          WHERE 1=1
-         <if test="id != null">
-            AND a.id = #{id}
+         <if test="role != null and role != ''">
+           AND a.role = #{role}
          </if>
-         <if test="name != null">
-            AND a.name = #{name}
-         </if> 
+         <if test="status != null and status != ''">
+           AND a.status = #{status}
+         </if>
+         <if test="query != null and query != ''">
+           AND (
+                  a.name LIKE CONCAT('%', #{query}, '%') OR 
+                  a.email LIKE CONCAT('%', #{query}, '%')OR 
+                  a.phone LIKE CONCAT('%', #{query}, '%') OR 
+                  a.dept_code LIKE CONCAT('%', #{query}, '%')
+                )
+         </if>
+         ORDER BY a.id
     </select>
 
     <insert id="insert" parameterType="java.util.Map">

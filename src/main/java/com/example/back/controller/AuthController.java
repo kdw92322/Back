@@ -4,6 +4,9 @@ import com.example.back.dto.AuthRequest;
 import com.example.back.dto.AuthResponse;
 import com.example.back.dto.RegisterRequest;
 import com.example.back.service.AuthService;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,8 +28,9 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest request) {
-        AuthResponse response = authService.login(request);
+    public ResponseEntity<AuthResponse> login(HttpServletRequest httpRequest, @RequestBody AuthRequest request) {
+        AuthResponse response = authService.login(httpRequest, request);
+
         return ResponseEntity.ok(response);
     }
 

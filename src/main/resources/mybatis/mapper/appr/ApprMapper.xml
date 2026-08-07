@@ -1,0 +1,166 @@
+<!DOCTYPE mapper PUBLIC "//mybatis.org/DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.back.mapper.appr.ApprMapper">
+    <insert id="insertApprovalInfo" parameterType="java.util.Map">
+        insert into tb_approval_master(
+             id
+            ,document_type
+            ,source_id
+            ,title
+            ,drafter_id
+            ,status
+            ,opinion
+            ,summary_content
+            ,created_at
+        )
+        values(
+             #{id}
+            ,#{document_type}
+            ,#{source_id}
+            ,#{title}
+            ,#{drafter_id}
+            ,#{status}
+            ,#{opinion}
+            ,#{summary_content}
+            ,now()
+        );
+    </insert>
+
+    <update id="updateApprovalStatus" parameterType="java.util.Map">
+        update tb_approval_master
+           set status = #{status}
+         where id = #{id}
+    </update>
+
+    <insert id="insertApprovalLine" parameterType="java.util.Map">
+        insert into tb_approval_line (
+             approval_id
+            ,approver_id
+            ,sequence
+            ,type
+            ,status
+            ,is_approve
+        )
+        values(
+             #{approval_id}
+            ,#{approver_id}
+            ,CAST(#{sequence} AS INTEGER)
+            ,#{type}
+            ,#{status}
+            ,#{is_approve}
+        );
+    </insert>
+
+    <select id="getNotifications" parameterType="String" resultType="Map">
+        select a.approval_id as id
+              ,a.approver_id
+              ,a.type
+              ,a.status
+              ,b.created_at 
+              ,b.title 
+              ,b.status as draft_status
+              ,b.opinion
+              ,b.drafter_id as sender
+              ,b.source_id
+              ,b.summary_content 
+          from tb_approval_line a
+          inner join tb_approval_master b on a.approval_id = b.id
+         where 1=1
+           and a.approver_id = #{userId}
+           and a.is_approve = '1'
+           and a.status = 0
+    </select>
+
+    <select id="getApprLineList" parameterType="Map" resultType="Map">
+        select approval_id as id
+              ,approver_id
+              ,sequence 
+              ,type
+              ,status
+              ,comment
+              ,approved_at 
+          from tb_approval_line
+         where 1=1
+           and approval_id = #{approvalId}
+         order by sequence
+    </select>
+
+    <update id="lineSubmitApproval" parameterType="Map">
+        DO $$
+        DECLARE
+            v_current_sequence INT;
+        BEGIN
+            select sequence + 1 as new_sequence
+              into v_current_sequence
+              from tb_approval_line
+             where 1=1
+               and approval_id = '${approval_id}'
+               and is_approve = '1';
+
+            <!-- 1. 결재 승인 -->
+            update tb_approval_line
+               set status = ${status}
+                  ,comment = '${comment}'
+                  ,is_approve = '0'
+                  ,approved_at = now()
+             where 1=1
+               and approval_id = '${approval_id}'
+               and approver_id = '${approver_id}';
+
+            <!-- 2. 다음 결재자 지정 -->
+            update tb_approval_line
+               set is_approve = '1'
+             where 1=1
+               and approval_id = '${approval_id}'
+               and sequence = v_current_sequence;
+        END $$;
+            
+    </update>
+
+    <select id="getLastSequence" parameterType="String" resultType="int">
+        select max(sequence) as last_sequence
+          from tb_approval_line
+         where approval_id = #{approval_id}
+    </select>
+
+    <select id="getApproverSequence" parameterType="String" resultType="int">
+        select sequence as approver_seq
+          from tb_approval_line
+         where approval_id = #{approval_id}
+           and approver_id = #{approver_id}
+    </select>
+
+    <select id="getApprTargetCheck" parameterType="String" resultType="Map">
+        with temp as (
+            select a.sequence as seq,
+                case when a.sequence = 1 then 1 else a.sequence - 1 end as before_seq
+              from tb_approval_line a 
+             where 1=1 
+               and a.approver_id = #{userId}
+        ),
+        current_info as (
+            select *
+              from tb_approval_line
+             where sequence in (select seq from temp)
+        ),
+        before_info as (
+            select *
+              from tb_approval_line
+             where sequence in (select before_seq from temp)
+        )
+        select b.approval_id as approval_id
+              ,b.approver_id as current_approver_id
+              ,b.sequence as current_sequence
+              ,b.status as current_status
+              ,c.approver_id as before_approver_id
+              ,c.sequence as before_sequence
+              ,c.status as before_status
+          from temp a
+          left outer join current_info b on a.seq = b.sequence
+          left outer join before_info c on a.before_seq = c.sequence
+          inner join tb_approval_master d on b.approval_id = d.id
+         where 1=1
+         order by b.sequence 
+    </select>
+
+
+</mapper>

@@ -44,6 +44,11 @@ public class S1000DServiceImpl implements S1000DService {
         return s1000DMapper.selectCsdbList(param);
     }
 
+    @Override
+    public Map<String, Object> xmlContent(Map<String, Object> param) throws IOException {
+        return s1000DMapper.xmlContent(param);
+    }
+
     @Transactional(rollbackFor = Exception.class)
     public int deleteCsdb(Map<String, Object> param) throws IOException {
         String csdbId = (String) param.get("csdb_id");

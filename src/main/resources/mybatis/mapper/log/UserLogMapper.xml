@@ -1,0 +1,18 @@
+<!DOCTYPE mapper PUBLIC "//mybatis.org/DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.back.mapper.log.UserLogMapper">
+    <insert id="insertUserLog" parameterType="map">
+        INSERT INTO public.tb_login_log (
+            id,
+            log_type,
+            ip,            
+            connect_dt,
+            seq
+        ) VALUES (
+            #{id},
+            #{logType},
+            #{ip},
+            now(),
+            (select coalesce(max(seq), 0) + 1 as new_seq from tb_login_log)
+        )
+    </insert>
+</mapper>

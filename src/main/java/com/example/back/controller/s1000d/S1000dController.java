@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 @RestController
 @RequestMapping("/s1000d")
 public class S1000dController {
-    
+
     @Autowired
     private S1000DService s1000DService;
 
@@ -31,6 +31,12 @@ public class S1000dController {
         return s1000DService.deleteCsdb(param);
     }
 
+    @GetMapping("/csdb/xml-content")
+    public Map<String, Object> xmlContent(@RequestParam Map<String, Object> param) throws IOException {
+        System.out.println("param : " + param);
+        return s1000DService.xmlContent(param);
+    }
+
     @PostMapping("/upload-csdb")
     public ResponseEntity<String> uploadAndUnzip(@RequestParam("file") MultipartFile file) {
         try {
@@ -40,7 +46,7 @@ public class S1000dController {
             return ResponseEntity.internalServerError().body("오류 발생: " + e.getMessage());
         }
     }
-    
+
     @GetMapping("/pmc/select")
     public List<Map<String, Object>> selectPmc(@RequestParam Map<String, Object> param) throws IOException {
         System.out.println("PMC 선택 파라미터: " + param); // 디버깅용 로그
@@ -60,8 +66,8 @@ public class S1000dController {
     @GetMapping("/getXmlContentByDmcId")
     public Map<String, Object> getXmlContentByDmcId(@RequestParam Map<String, Object> param) throws IOException {
         Map<String, Object> contents = s1000DService.getXmlContentById(param);
-        //System.out.println("컨트롤러에서 반환할 모듈 리스트: " + rtnList); // 디버깅용 로그
+        // System.out.println("컨트롤러에서 반환할 모듈 리스트: " + rtnList); // 디버깅용 로그
         return contents;
     }
-    
+
 }

@@ -70,7 +70,7 @@
             #{detail_id},
             #{acc_code},
             #{dr_cr},
-            #{amount},
+            CAST(#{amount} AS integer),
             #{remark},
             now()
         )

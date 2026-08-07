@@ -52,7 +52,6 @@
     <!-- 5. 예산 과목 목록 조회 -->
     <select id="selectAllBudgets" resultType="com.example.back.dto.BudgetDto">
         SELECT 
-            id,
             code AS budgetCode,
             name AS budgetName,
             parent_code AS parentCode,
@@ -77,7 +76,7 @@
     <!-- 6. ID로 상세 조회 -->
     <select id="selectBudgetById" parameterType="int" resultType="com.example.back.dto.BudgetDto">
         SELECT 
-            id, code AS budgetCode, name AS budgetName, budgetLevel, amount
+            code AS budgetCode, name AS budgetName, budgetLevel, amount
         FROM tb_budget_category
         WHERE id = #{id}
     </select>
@@ -163,18 +162,47 @@
                and dept_id = #{dept_code}
             </if>
             group by a.budget_id, TO_CHAR(TO_DATE(replace(b.slip_date,'-',''), 'YYYYMMDD'), 'YYYY') 
+        ), summary as (
+            select a.budget_code
+                ,a.budget_total
+                ,b.exec_total
+                ,ROUND((b.exec_total/a.budget_total)*100, 1) as rate
+            from total_budget_amt a
+            left outer join total_exec_amt b on a.budget_code = b.budget_code
+            where 1=1
+            <if test="year != null and year != ''">
+              and b.sh_year = #{year}
+            </if>
         )
-        select a.budget_code
-            ,a.budget_total
-            ,b.exec_total
-            ,ROUND((b.exec_total/a.budget_total)*100, 1) as rate
-        from total_budget_amt a
-        left outer join total_exec_amt b on a.budget_code = b.budget_code
-       where 1=1
-        <if test="year != null and year != ''">
-         and b.sh_year = #{year}
-        </if>
+        select sum(budget_total) as budget_total
+              ,sum(exec_total) as exec_total
+              ,ROUND(sum(exec_total)/sum(budget_total)*100, 1) as rate
+          from summary
+    </select>
 
+    <!-- 관 > 항 > 목 식으로 예산 이름 조회 -->
+    <select id="selectBudgetName" parameterType="String" resultType="String">
+        WITH RECURSIVE temp AS (
+            SELECT code, 
+                name, 
+                cast(budgetlevel as integer) as level, 
+                ARRAY[name::text] as path_arr
+            FROM tb_budget_category
+            WHERE parent_code = '0' 
+            
+            UNION ALL
+            
+            SELECT t.code, 
+                t.name, 
+                cast(t.budgetlevel as integer) as level, 
+                r.path_arr || t.name::text  as path_arr
+            FROM tb_budget_category t
+            INNER JOIN temp r ON t.parent_code  = r.code
+        )
+        SELECT array_to_string(a.path_arr, ' > ') AS budget_name
+          FROM temp a
+         where 1=1
+           and a.code = #{code}
 
     </select>
 </mapper>

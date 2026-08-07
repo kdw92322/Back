@@ -42,10 +42,14 @@ public class S1000dResourceController {
         Map<String, Object> csdb = csdbList.get(0);
         String name = String.valueOf(csdb.get("name"));
 
+        System.out.println("csdbId : " + csdbId);
+        //System.out.println("name : " + name);
+
         // S1000D 리소스 물리 경로 구성 (uploadRoot/csdbId/name/csdb/imageLink)
         imageLink = imageLink + ".svg"; // 요청된 이미지 링크에 .svg 확장자 추가
-        Path path = Paths.get(uploadRoot, csdbId, name, "csdb", imageLink).toAbsolutePath().normalize();
-        
+        Path path = Paths.get(uploadRoot, csdbId, "csdb", imageLink).toAbsolutePath().normalize();
+        System.out.println("Path : " + path);
+
         // S1000DService에서 래스터 이미지를 SVG로 변환하여 저장했을 수 있으므로, 
         // 요청된 파일이 없고 확장자가 포함된 경우 .svg 파일로 다시 확인합니다.
         if (!Files.exists(path) && imageLink.contains(".")) {

@@ -17,7 +17,7 @@ import com.example.back.service.menu.MenuService;
 @RestController
 @RequestMapping("/menu")
 public class MenuController {
-    
+
     @Autowired
     private MenuService menuService;
 

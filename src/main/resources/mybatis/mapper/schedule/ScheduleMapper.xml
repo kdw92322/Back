@@ -1,0 +1,77 @@
+<!DOCTYPE mapper PUBLIC "//mybatis.org/DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.example.back.mapper.schedule.ScheduleMapper">
+    <select id="selectScheduleList" resultType="map">
+        select id
+              ,title
+              ,memo
+              ,to_char(to_timestamp(start_date||start_time,'YYYYMMDDHH24MI'),'YYYY-MM-DD HH24:MI') as start
+              ,to_char(to_timestamp(end_date||end_time,'YYYYMMDDHH24MI'),'YYYY-MM-DD HH24:MI') as end
+              ,all_day
+              ,border_color
+              ,background_color
+              ,text_color
+              ,created_at
+              ,updated_at
+          from tb_calendar_events
+         where 1=1 
+    </select>
+
+    <insert id="insert" parameterType="map">
+        <selectKey keyProperty="id" resultType="int" order="BEFORE">
+            select coalesce(max(id), 0) + 1 as id 
+              from tb_calendar_events
+        </selectKey>
+
+        insert into tb_calendar_events
+        (
+            id,
+            title,
+            memo,
+            start_date,
+            end_date,
+            start_time,
+            end_time,
+            all_day,
+            border_color,
+            background_color,
+            text_color,
+            created_at
+        )
+        values(
+            cast(#{id} as integer),
+            #{title},
+            #{memo},
+            replace(#{start_date}, '-', ''),
+            replace(#{end_date}, '-', ''),
+            replace(#{start_time}, ':', ''),
+            replace(#{end_time}, ':', ''),
+            #{all_day},
+            #{border_color},
+            #{background_color},
+            #{text_color},
+            now()
+        )
+    </insert>
+
+    <update id="update" parameterType="map">
+        update tb_calendar_events
+           set title = #{title}
+              ,memo = #{memo}
+              ,start_date = replace(#{start_date}, '-', '') 
+              ,end_date = replace(#{end_date}, '-', '')
+              ,start_time = replace(#{start_time}, ':', '')
+              ,end_time = replace(#{end_time}, ':', '')
+              ,all_day = #{all_day}
+              ,border_color = #{border_color}
+              ,background_color = #{background_color}
+              ,text_color = #{text_color}
+              ,updated_at = now()
+         where id = cast(#{id} as integer)
+    </update>
+
+    <delete id="delete" parameterType="map">
+        delete 
+          from tb_calendar_events
+         where id = cast(#{id} as integer)
+    </delete>
+</mapper>

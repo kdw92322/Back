@@ -37,7 +37,7 @@ public class AccBudgetController {
         if (count > 0) {
             return ResponseEntity.badRequest().body("이미 존재하는 예산 코드입니다.");
         }
-        
+
         accBudgetService.insertBudget(budgetDto);
         return ResponseEntity.ok("예산 과목이 성공적으로 등록되었습니다.");
     }
@@ -60,7 +60,7 @@ public class AccBudgetController {
         if (budgetCode == null) {
             return ResponseEntity.badRequest().body("예산 코드가 누락되었습니다.");
         }
-        
+
         int result = accBudgetService.deleteBudget(budgetCode);
         if (result > 0) {
             return ResponseEntity.ok("예산 과목이 성공적으로 삭제되었습니다.");
@@ -73,7 +73,7 @@ public class AccBudgetController {
     @GetMapping("/exec-stat")
     public ResponseEntity<Map<String, Object>> selectExecStat(@RequestParam Map<String, Object> params) {
         Map<String, Object> resultMap = new HashMap<String, Object>();
-        
+
         System.out.println("Received params: " + params);
         List<Map<String, Object>> list = accBudgetService.selectExecStat(params);
         resultMap.put("list", list);

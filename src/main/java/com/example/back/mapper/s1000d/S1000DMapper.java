@@ -15,4 +15,5 @@ public interface S1000DMapper {
    public List<Map<String, Object>> getXmlContentById(Map<String, Object> param);
    public void insertFileInfo(Map<String, Object> fileInfo);
    public void insertIcnInfo(Map<String, Object> icnInfo);
+   public Map<String, Object> xmlContent(Map<String, Object> param);
 }

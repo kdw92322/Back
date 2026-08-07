@@ -11,6 +11,8 @@ public interface S1000DService {
 
     public List<Map<String, Object>> selectCsdbList(Map<String, Object> param) throws IOException;
 
+    public Map<String, Object> xmlContent(Map<String, Object> param) throws IOException;
+
     public int deleteCsdb(Map<String, Object> param) throws IOException;
 
     public void storeUnzippedFiles(MultipartFile zipFile) throws IOException;

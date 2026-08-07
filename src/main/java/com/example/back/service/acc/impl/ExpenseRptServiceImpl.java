@@ -18,7 +18,7 @@ public class ExpenseRptServiceImpl implements ExpenseRptService {
     private ExpenseRptMapper expenseRptMapper;
 
     // 1. 지출결의서 목록 조회
-    public List<java.util.Map<String, Object>> selectAllExpenseReports(java.util.Map<String, Object> params) {
+    public List<java.util.Map<String, Object>> selectAllExpenseReports(Map<String, Object> params) {
         return expenseRptMapper.selectAllExpenseReports(params);
     }
 
@@ -37,6 +37,7 @@ public class ExpenseRptServiceImpl implements ExpenseRptService {
                 params.get("header"), new TypeReference<Map<String, Object>>() {
                 });
 
+        Header.put("exp_type", "2");
         Header.put("createBy", userId);
         expenseRptMapper.insertExpenseReport(Header);
     }
@@ -50,7 +51,7 @@ public class ExpenseRptServiceImpl implements ExpenseRptService {
         Map<String, Object> Header = mapper.convertValue(
                 params.get("header"), new TypeReference<Map<String, Object>>() {
                 });
-        // System.out.println("Header for update: " + Header); // 디버깅용 로그
+        System.out.println("Header for update: " + Header); // 디버깅용 로그
 
         return expenseRptMapper.updateExpenseReport(Header);
     }

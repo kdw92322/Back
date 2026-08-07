@@ -1,21 +1,24 @@
 <!DOCTYPE mapper PUBLIC "//mybatis.org/DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.example.back.mapper.board.BoardMapper">
     <select id="select" parameterType="map" resultType="map">
-        SELECT board_id
-              ,category
-              ,title
-              ,content
-              ,author
-              ,COALESCE(use_yn, 'N') as use_yn
-              ,TO_CHAR(reg_date, 'YYYY-MM-DD') as reg_date
-              ,TO_CHAR(upt_date, 'YYYY-MM-DD') as upt_date 
-          FROM tb_board
+        SELECT a.board_id
+                ,a.category as category_cd
+                ,b.dtl_nm as category 
+                ,a.title 
+                ,a.content 
+                ,a.author 
+                ,COALESCE(a.use_yn, 'N') as use_yn 
+                ,TO_CHAR(a.reg_date, 'YYYY-MM-DD') as reg_date 
+                ,TO_CHAR(a.upt_date, 'YYYY-MM-DD') as upt_date 
+          FROM tb_board a
+          INNER JOIN tb_common_code_dtl b ON a.category = b.dtl_cd
+                                       AND b.mst_cd = 'boardType'				
          WHERE 1=1
         <if test="category != null and category != ''">
-           and category = #{category}
+           AND a.category = #{category}
         </if>
         <if test="title != null and title != ''">
-           and title like CONCAT('%', #{title}, '%') 
+           AND title like CONCAT('%', #{title}, '%') 
         </if>
     </select>
 

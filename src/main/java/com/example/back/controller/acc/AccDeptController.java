@@ -17,15 +17,21 @@ import com.example.back.service.acc.AccDeptService;
 
 @RestController
 @RequestMapping("/accdept")
-public class AccDeptController  {
+public class AccDeptController {
 
     @Autowired
     private AccDeptService accDeptService;
 
+    @GetMapping("/getCode")
+    public ResponseEntity<String> getDeptCode(@RequestParam String deptName) {
+        String code = accDeptService.getCodes(deptName);
+        return ResponseEntity.ok(code);
+    }
+
     // 1. 부서 등록 API
     @PostMapping("/insert")
     public ResponseEntity<String> registerDept(@RequestBody DeptDto deptDto) {
-    
+
         if (deptDto.getDeptCode() == null || deptDto.getDeptCode().isEmpty()) {
             return ResponseEntity.badRequest().body("부서 코드가 비어있습니다.");
         }
@@ -34,7 +40,7 @@ public class AccDeptController  {
         if (count > 0) {
             return ResponseEntity.badRequest().body("이미 존재하는 부서 코드입니다.");
         }
-        
+
         accDeptService.insertDept(deptDto);
         return ResponseEntity.ok("부서가 성공적으로 등록되었습니다.");
     }
@@ -53,8 +59,9 @@ public class AccDeptController  {
     public ResponseEntity<String> deleteDept(@RequestBody Map<String, String> params) {
         System.out.println("Received delete request with params: " + params);
         String deptCode = params.get("dept_code");
-        if (deptCode == null) return ResponseEntity.badRequest().body("부서 코드가 누락되었습니다.");
-        
+        if (deptCode == null)
+            return ResponseEntity.badRequest().body("부서 코드가 누락되었습니다.");
+
         int result = accDeptService.deleteDept(deptCode);
         if (result > 0) {
             return ResponseEntity.ok("부서가 성공적으로 삭제되었습니다.");

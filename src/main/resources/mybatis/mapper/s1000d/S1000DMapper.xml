@@ -124,4 +124,8 @@
              updated_at = NOW()
     </insert>
 
+    <select id="xmlContent" parameterType="java.util.Map" resultType="map">
+  
+    </select>
+
 </mapper>

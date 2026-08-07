@@ -41,7 +41,8 @@
         </selectKey>
         INSERT INTO tb_expense_resolutions (
             no, 
-            title, 
+            title,
+            exp_type,
             resolution_date, 
             dept_id, 
             budget_id, 
@@ -51,7 +52,8 @@
             created_dt
         ) VALUES (
             #{no}, 
-            #{title}, 
+            #{title},
+            #{exp_type},
             replace(#{report_date},'-',''),
             #{dept_code}, 
             #{budget_code}, 
@@ -66,11 +68,11 @@
         UPDATE tb_expense_resolutions
         <set>
             <if test="title != null and title != ''">title = #{title},</if>
-            <if test="resolution_date != null">resolution_date = #{resolution_date},</if>
-            <if test="dept_id != null and dept_id != ''">dept_id = #{dept_id},</if>
-            <if test="budget_id != null and budget_id != ''">budget_id = #{budget_id},</if>
+            <if test="report_date != null and report_date != ''">resolution_date = replace(#{report_date},'-',''),</if>
+            <if test="dept_code != null and dept_code != ''">dept_id = #{dept_code},</if>
+            <if test="budget_code != null and budget_code != ''">budget_id = #{budget_code},</if>
             <if test="status_code != null and status_code != ''">status = #{status_code},</if>
-            <if test="total_amount != null">total_amount = #{total_amount},</if>
+            <if test="total_amount != null and total_amount != ''">total_amount = #{total_amount},</if>
             updated_dt = CURRENT_TIMESTAMP
         </set>
         WHERE no = #{no}

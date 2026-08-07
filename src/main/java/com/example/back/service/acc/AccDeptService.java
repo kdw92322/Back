@@ -6,6 +6,8 @@ import com.example.back.dto.DeptDto;
 
 public interface AccDeptService {
 
+    public String getCodes(String deptName);
+
     public int checkDeptCodeExists(String deptCode);
 
     public void insertDept(DeptDto deptDto);

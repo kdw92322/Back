@@ -40,20 +40,20 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf().disable()
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/auth/**", "/", "/gallery/video/**", "/gallery/view/**", "/gallery/thumbnail/**", "/h2-console/**").permitAll()
+                        .requestMatchers("/auth/**", "/", "/gallery/video/**", "/gallery/view/**",
+                                "/gallery/thumbnail/**", "/h2-console/**")
+                        .permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .anyRequest().authenticated()
-                )
+                        .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
                 // 1. 인증 실패 시 처리 (토큰이 없거나 잘못된 경우)
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint((request, response, authException) -> {
                             response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
-                        })
-                )    
+                        }))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(new JwtExceptionFilter(), jwtAuthFilter.getClass()); 
+                .addFilterBefore(new JwtExceptionFilter(), jwtAuthFilter.getClass());
 
         // for h2 console
         http.headers(headers -> headers.frameOptions().sameOrigin());
@@ -82,7 +82,8 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:8080"));
+        configuration
+                .setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:8080", "http://localhost:5000"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

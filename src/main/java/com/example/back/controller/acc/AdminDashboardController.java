@@ -17,13 +17,11 @@ public class AdminDashboardController {
 
     @GetMapping("/exec-dept-amount")
     public Map<String, Object> getExecDeptAmount(@RequestParam(required = false) Map<String, Object> param) {
-
         return adminDashboardService.getExecDeptAmount(param);
     }
 
     @GetMapping("/dept-budget-info")
     public Map<String, Object> getDeptBudgetInfo(Map<String, Object> param) {
-
         return adminDashboardService.getDeptBudgetInfo(param);
     }
 
