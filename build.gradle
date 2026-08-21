@@ -46,6 +46,13 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+    implementation files('libs/jcgm-core-2.1.1.jar')
+
+    // 2. Graphics2D 출력을 SVG로 변환해주는 Apache Batik 라이브러리
+    implementation 'org.apache.xmlgraphics:batik-svggen:1.17'
+    implementation 'org.apache.xmlgraphics:batik-dom:1.17'
+
 }
 
 tasks.withType(JavaCompile).configureEach {

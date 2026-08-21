@@ -15,7 +15,7 @@
                 ,a.confirmed_at
             from tb_slip_header a
             left outer join tb_expense_resolutions b on a.resolution_id = b.no
-           where 1=1 
+           where 1=1
            <if test="slip_id != null and slip_id != ''">
              and a.slip_id = #{slip_id}
            </if>
@@ -24,12 +24,12 @@
 
     <select id="details" parameterType="map" resultType="map">
         select a.slip_id
-            ,a.detail_id
-            ,a.acc_code
-            ,a.dr_cr
-            ,a.amount 
-            ,b."name" as acc_name
-            ,a.summary as remark
+              ,a.detail_id
+              ,a.acc_code
+              ,a.dr_cr
+              ,a.amount 
+              ,b."name" as acc_name
+              ,a.summary as remark
         from tb_slip_detail a
         left outer join tb_account_category b on a.acc_code = b.code
        where a.slip_id = #{slip_id}

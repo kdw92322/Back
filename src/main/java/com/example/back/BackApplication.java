@@ -9,7 +9,12 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.annotation.Bean;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.security.core.context.SecurityContextHolder;
 
+import jakarta.annotation.PostConstruct;
+
+@EnableAsync
 @SpringBootApplication
 public class BackApplication extends SpringBootServletInitializer{
 
@@ -30,5 +35,11 @@ public class BackApplication extends SpringBootServletInitializer{
     @Bean
     public ConfigurationCustomizer mybatisConfigurationCustomizer() {
         return configuration -> configuration.setLogImpl(Log4j2Impl.class);
+    }
+
+    // ⭐ [핵심 추가] 애플리케이션 시작 시 시큐리티 컨텍스트 공유 전략을 변경합니다.
+    @PostConstruct
+    public void init() {
+        SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_INHERITABLETHREADLOCAL);
     }
 }

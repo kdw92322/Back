@@ -1,6 +1,14 @@
 package com.example.back.service.s1000d.impl;
 
+import java.awt.Dimension;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -11,34 +19,64 @@ import java.util.Base64;
 
 import com.example.back.mapper.s1000d.S1000DMapper;
 import com.example.back.service.s1000d.S1000DService;
+import com.example.back.service.s1000d.S1000DTransactionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import net.sf.jcgm.core.CGM;
+import net.sf.jcgm.core.CGMDisplay;
 
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.stream.Stream;
 
+import org.apache.batik.dom.GenericDOMImplementation;
+import org.apache.batik.svggen.SVGGraphics2D;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.w3c.dom.DOMImplementation;
+import org.w3c.dom.Document;
+
 import java.util.stream.Collectors;
 
 @Service
 public class S1000DServiceImpl implements S1000DService {
 
+    // 💡 클래스 상단에 로거 객체를 선언합니다.
+    private static final Logger log = LoggerFactory.getLogger(S1000DServiceImpl.class);
+
+    public void testMethod() {
+        log.info("일반적인 진행 안내 로그를 출력할 때");
+        log.error("에러나 예외 상황을 강조하여 출력할 때");
+    }
+
+    @Autowired
+    private S1000DTransactionService transactionService;
+
     // 저장될 루트 경로 (예: application.properties에서 주입받아 사용 권장)
     @Value("${file.upload-dir}")
     private String uploadRoot;
+
+    private String CSDB_INDEX = "CSDB";
 
     @Autowired
     private S1000DMapper s1000DMapper;
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    // 💡 서비스 전역에 스레드 세이프 맵 배치
+    private final Map<String, SseEmitter> emitters = new ConcurrentHashMap<>();
 
     public List<Map<String, Object>> selectCsdbList(Map<String, Object> param) throws IOException {
         return s1000DMapper.selectCsdbList(param);
@@ -52,10 +90,11 @@ public class S1000DServiceImpl implements S1000DService {
     @Transactional(rollbackFor = Exception.class)
     public int deleteCsdb(Map<String, Object> param) throws IOException {
         String csdbId = (String) param.get("csdb_id");
-
+        
         if (csdbId != null) {
             // 1. 해당 CSDB ID로 된 디렉토리 자체를 삭제 (uploadRoot/csdb_id)
-            Path csdbDir = Paths.get(uploadRoot, csdbId).toAbsolutePath().normalize();
+            Path csdbDir = Paths.get(uploadRoot, csdbId, CSDB_INDEX).toAbsolutePath().normalize();
+            
             if (Files.exists(csdbDir)) {
                 try (Stream<Path> walk = Files.walk(csdbDir)) {
                     List<Path> pathsToDelete = walk.sorted(java.util.Comparator.reverseOrder())
@@ -66,112 +105,204 @@ public class S1000DServiceImpl implements S1000DService {
                 }
             }
         }
-        // 2. DB 데이터 삭제 (Foreign Key 설정에 따라 연관 데이터도 삭제됨)
-        return s1000DMapper.deleteCsdb(param);
+
+        s1000DMapper.deleteCsdb(param);
+        return 0;
     }
 
-    @Transactional(rollbackFor = Exception.class)
-    public void storeUnzippedFiles(MultipartFile zipFile) throws IOException {
-        String uuid = UUID.randomUUID().toString();
+    // 컨트롤러가 호출할 이미터 생성 메서드
+    @Override
+    public SseEmitter createEmitter(String clientId) {
+        SseEmitter emitter = new SseEmitter(10 * 60 * 1000L); // 10분 설정
+        emitters.put(clientId, emitter);
 
-        // 1. CSDB ID 전용 디렉토리 생성 (uploadRoot)
+        log.info("🔌 [SSE 연결 완료] 새로운 클라이언트 세션 등록 ➡️ clientId: {}", clientId);
+
+        emitter.onCompletion(() -> {
+            log.info("❌ [SSE 연결 해제] 작업 완료로 인한 커넥션 자원 반환 ➡️ clientId: {}", clientId);
+            emitters.remove(clientId);
+        });
+        emitter.onTimeout(() -> {
+            log.warn("⏰ [SSE 연결 만료] 타임아웃 발생으로 연결 해제 ➡️ clientId: {}", clientId);
+            emitters.remove(clientId);
+        });
+        emitter.onError((e) -> {
+            log.error("💥 [SSE 연결 에러] 네트워크 스트림 예외 발생 ➡️ clientId: {}", clientId, e);
+            emitters.remove(clientId);
+        });
+
+        try {
+            // 커넥션 개방 신호 발송
+            emitter.send(SseEmitter.event().name("init").data("connected"));
+        } catch (IOException e) {
+            emitters.remove(clientId);
+        }
+        return emitter;
+    }
+
+    // S1000DServiceImpl.java 내부에 구성할 진입점 메서드 스펙
+    @Override
+    @Async("taskExecutor")
+    public void storeUnzippedFilesAsync(byte[] fileBytes, String originalFilename, long zipFileSize, String clientId) {
+        // 💡 3. 비동기 스레드가 깨어난 직후 맵에서 직접 Emitter를 매핑해 가져옵니다.
+        SseEmitter emitter = emitters.get(clientId);
+
+        log.info("🚀 [백그라운드 스레드 가동] 처리 시작 ➡️ 파일명: {}, 클라이언트ID: {}", originalFilename, clientId);
+        
+        if (emitter == null) {
+            // 🔍 중요 체크 포인트: 만약 콘솔에 이 워닝이 찍힌다면 React가 보내준 clientId 문자열과 SSE 연결할 때 쓴 ID가 불일치하는 상태입니다.
+            log.warn("⚠️ [경고] clientId [{}] 에 매핑된 활성화된 SseEmitter를 찾지 못했습니다. 로그 전송이 생략됩니다.", clientId);
+        }
+
+        try {
+            try (InputStream inputStream = new ByteArrayInputStream(fileBytes)) {
+                // 실시간 압축 풀기 및 인서트 핵심 비즈니스 로직 가동
+                storeUnzippedFiles(inputStream, originalFilename, zipFileSize, emitter, fileBytes); 
+            }
+
+            log.info("🏁 [백그라운드 스레드 정상 종료] 모든 데이터 이관 완료 ➡️ clientId: {}", clientId);
+            if (emitter != null) {
+                emitter.send(SseEmitter.event().name("upload-success").data("CSDB 패키지 데이터 처리가 완료되었습니다."));
+            }
+        } catch (Exception e) {
+            log.error("❌ [비동기 스레드 런타임 에러 발생]", e); // 에러 발생 시 자바 콘솔에 StackTrace 전체 출력하도록 로깅 처리
+
+            if (emitter != null) {
+                try {
+                    emitter.send(SseEmitter.event().name("upload-failure").data("백엔드 예외: " + e.getMessage()));
+                } catch (IOException ignored) {}
+            }
+        } finally {
+            if (emitter != null) {
+                emitter.complete();
+            }
+            emitters.remove(clientId);
+        }
+    }
+
+    @Override
+    public void storeUnzippedFiles(InputStream zipInputStream, String zipFileName, Long zipFileSize, 
+                                   SseEmitter emitter, byte[] fileBytes) throws IOException {
+        String uuid = UUID.randomUUID().toString();
+        int totalFilesCount = countFilesInZip(fileBytes);
+        int currentCount = 0;
+
+        log.info("📊 [CSDB 인덱싱 초기화] 분석 대상 내부 파일 총 개수: {}개", totalFilesCount);
+
         Path targetDir = Paths.get(uploadRoot, uuid).toAbsolutePath().normalize();
         if (!Files.exists(targetDir)) {
             Files.createDirectories(targetDir);
         }
 
-        // 2. ZIP 스트림 처리 (Try-with-resources로 자원 반환 보장)
-        try (ZipInputStream zis = new ZipInputStream(zipFile.getInputStream(), StandardCharsets.UTF_8)) {
-            Map<String, Object> csdbInfo = new HashMap<>();
-            String zipFileName = zipFile.getOriginalFilename();
-            String size = formatSize(zipFile.getSize());
-            csdbInfo.put("csdb_id", uuid);
-            csdbInfo.put("filename", zipFileName);
-            csdbInfo.put("filesize", size);
-            s1000DMapper.insertCsdbInfo(csdbInfo);
+        Map<String, Object> csdbInfo = new HashMap<>();
+        csdbInfo.put("csdb_id", uuid);
+        csdbInfo.put("filename", zipFileName);
+        csdbInfo.put("filesize", formatSize(zipFileSize));
+        transactionService.insertCsdbMasterInfo(csdbInfo);
 
+        try (ZipInputStream zis = new ZipInputStream(zipInputStream, StandardCharsets.UTF_8)) {
             ZipEntry entry;
-            while ((entry = zis.getNextEntry()) != null) {
-                // 보안: Zip Slip 취약점 방지
-                Path filePath = targetDir.resolve(entry.getName()).normalize();
-                if (!filePath.startsWith(targetDir)) {
-                    throw new IOException("유효하지 않은 파일 경로입니다: " + entry.getName());
-                }
+            
+            log.info("▶️ [ZipInputStream 루프 시동] 파일 복사 및 가공 처리를 전개합니다.");
 
+            while ((entry = zis.getNextEntry()) != null) {
+                Path filePath = targetDir.resolve(entry.getName()).normalize();
+                
                 if (entry.isDirectory()) {
                     Files.createDirectories(filePath);
                 } else {
-                    // 부모 디렉토리가 없으면 생성
                     if (filePath.getParent() != null && !Files.exists(filePath.getParent())) {
                         Files.createDirectories(filePath.getParent());
                     }
 
-                    // 1. 파일 데이터 읽기 (물리적 저장은 하단 조건에 따라 수행)
-                    byte[] fileBytes = zis.readAllBytes();
+                    if (entry.getName().contains("__MACOSX")) {
+                        zis.closeEntry();
+                        continue;
+                    }
 
+                    currentCount++;
+                    String fileKey = "file_" + currentCount;
+                    long totalBytes = entry.getSize();
                     String fileName = filePath.getFileName().toString();
-                    String fileNameLower = fileName.toLowerCase();
 
-                    System.out.println("처리 중인 파일: " + fileName); // 디버깅용 로그
-                    if (fileNameLower.endsWith(".xml")) {
-                        // XML 파일은 물리적으로 저장
-                        Files.write(filePath, fileBytes, StandardOpenOption.CREATE,
-                                StandardOpenOption.TRUNCATE_EXISTING);
+                    log.info("📂 [압축 해제 중] ({}/{}) 처리 중인 파일명: {} (용량: {} bytes)", currentCount, totalFilesCount, fileName, totalBytes);
 
-                        String dmcId = fileName.substring(0, fileName.lastIndexOf("."));
+                    // 기존에 작동이 검증된 분할 버퍼 파일 쓰기 처리 
+                    try (FileOutputStream fos = new FileOutputStream(filePath.toFile())) {
+                        byte[] buffer = new byte[4096];
+                        int len;
+                        long writtenBytes = 0;
+                        int lastPercent = 0;
 
-                        // 1. 기존 방식대로 파일 바이트를 UTF-8 문자열로 읽어옵니다.
-                        String xmlContent = new String(fileBytes, StandardCharsets.UTF_8);
+                        while ((len = zis.read(buffer)) != -1) {
+                            fos.write(buffer, 0, len);
+                            writtenBytes += len;
 
-                        // 2. 혹시 모를 UTF-8 BOM(\ufeff) 문자가 붙어있다면 제거합니다.
-                        if (xmlContent.startsWith("\ufeff")) {
-                            xmlContent = xmlContent.substring(1);
-                        }
-
-                        // 3. XML 선언부(<?xml) 앞뒤에 붙은 미세한 공백과 줄바꿈을 제거합니다.
-                        xmlContent = xmlContent.trim();
-
-                        // 4. [선택 사항] 혹시 모를 정규식 안전장치 (선언문 앞의 보이지 않는 모든 특수문자 제거)
-                        xmlContent = xmlContent.replaceFirst("^([\\W]+)<", "<");
-
-                        Map<String, Object> fileInfo = new HashMap<>();
-                        fileInfo.put("csdb_id", uuid);
-                        fileInfo.put("dmcId", dmcId);
-                        fileInfo.put("xmlContent", xmlContent);
-                        fileInfo.put("filePath", filePath.toString());
-
-                        System.out.println("filepath : " + filePath.toString()); // 디버깅용 로그
-
-                        // MyBatis/JPA를 통한 DB 저장 (Transactional에 의해 일관성 보장)
-                        s1000DMapper.insertFileInfo(fileInfo);
-                    } else if (isIcnFile(fileNameLower)) {
-                        // ICN 파일(이미지 등) 처리
-                        String icnId = fileName.contains(".") ? fileName.substring(0, fileName.lastIndexOf("."))
-                                : fileName;
-
-                        if (fileNameLower.endsWith(".svg")) {
-                            // 이미 SVG인 경우 저장
-                            Files.write(filePath, fileBytes, StandardOpenOption.CREATE,
-                                    StandardOpenOption.TRUNCATE_EXISTING);
-                        } else if (isSupportedRaster(fileNameLower)) {
-                            // 래스터 이미지를 SVG로 전환 처리
-                            byte[] processedBytes = convertToSvg(fileBytes, fileName);
-                            String targetFileName = icnId + ".svg";
-
-                            // 변환된 SVG 파일만 물리적으로 저장
-                            Path svgPath = filePath.getParent().resolve(targetFileName);
-                            Files.write(svgPath, processedBytes, StandardOpenOption.CREATE,
-                                    StandardOpenOption.TRUNCATE_EXISTING);
-                            System.out.println("SVG 변환 파일 저장 완료: " + svgPath);
-
-                            // 원본(PNG, JPG 등)은 저장하지 않음
+                            // 🟢 개선된 코드: 퍼센트가 진짜로 '증가'했을 때 딱 1번만 발송
+                            if (totalBytes > 0) {
+                                int currentPercent = (int) ((writtenBytes * 100) / totalBytes);
+                                
+                                // 현재 퍼센트가 이전 기록(lastPercent)보다 '확실히 큰 경우'에만 진입
+                                if (currentPercent > lastPercent) {
+                                    lastPercent = currentPercent; // 갱신하여 중복 발송 차단
+                                    
+                                    if (currentPercent < 100) {
+                                        sendProgress(emitter, fileKey, fileName, currentPercent, currentCount, totalFilesCount);
+                                    }
+                                }
+                            }
                         }
                     }
+
+                    // 파일 물리 가공 및 단일 격리 트랜잭션 매퍼 실행 위임
+                    byte[] fileBytesArray = Files.readAllBytes(filePath);
+                    transactionService.processAndInsertFileInfo(uuid, fileName, filePath.toString(), fileBytesArray);
+
+                    // 💡 개별 파일 인서트 최종 완료 100% 전송
+                    sendProgress(emitter, fileKey, fileName, 100, currentCount, totalFilesCount);
+                }
+                zis.closeEntry();
+            }
+            log.info("🏁 [ZipInputStream 루프 종료] 모든 모듈 파일 시스템 동기화 및 DB 매핑 완료.");
+        }
+    }
+
+    private void sendProgress(SseEmitter emitter, String fileKey, String fileName, int percent, int current, int total) {
+        if (emitter == null) return;
+        try {
+            String payload = String.format(
+                "{\"fileKey\":\"%s\",\"fileName\":\"%s\",\"percent\":%d,\"current\":%d,\"total\":%d}",
+                fileKey, fileName, percent, current, total
+            );
+            // React의 fetchEventSource를 타겟으로 progress 이벤트를 밀어냅니다.
+            emitter.send(SseEmitter.event().name("progress").data(payload));
+        } catch (Exception e) {
+            log.error("❌ [SSE 발송 실패] 클라이언트 스트림에 데이터를 쓰지 못했습니다. 메시지: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * 파일 크기(byte)를 읽기 쉬운 단위(KB, MB 등)로 변환합니다.
+     */
+    private String formatSize(long bytes) {
+        if (bytes <= 0) return "0 KB";
+        if (bytes < 1024 * 1024) return String.format("%.1f KB", (double) bytes / 1024);
+        return String.format("%.1f MB", (double) bytes / (1024 * 1024));
+    }
+
+    // 파일 개수 카운트 유틸 메서드
+    private int countFilesInZip(byte[] fileBytes) throws IOException {
+        int count = 0;
+        try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(fileBytes), StandardCharsets.UTF_8)) {
+            ZipEntry entry;
+            while ((entry = zis.getNextEntry()) != null) {
+                if (!entry.isDirectory() && !entry.getName().contains("__MACOSX")) {
+                    count++;
                 }
                 zis.closeEntry();
             }
         }
-        // 이 메서드가 종료되어야 컨트롤러에서 200 OK 응답을 보냅니다.
+        return count;
     }
 
     public List<Map<String, Object>> selectPmc(Map<String, Object> param) throws IOException {
@@ -203,66 +334,6 @@ public class S1000DServiceImpl implements S1000DService {
             }
         }
         return rtnMap;
-    }
-
-    /**
-     * SVG로 변환 가능한 래스터 이미지 포맷인지 확인합니다.
-     */
-    private boolean isSupportedRaster(String fileNameLower) {
-        return fileNameLower.endsWith(".png") || fileNameLower.endsWith(".jpg") ||
-                fileNameLower.endsWith(".jpeg") || fileNameLower.endsWith(".gif") || fileNameLower.endsWith(".cgm");
-    }
-
-    /**
-     * 이미지 파일을 SVG 형식으로 전환합니다.
-     * Raster 이미지(PNG, JPG 등)의 경우 브라우저 호환성을 위해 SVG <image> 태그로 래핑합니다.
-     */
-    private byte[] convertToSvg(byte[] fileBytes, String fileName) {
-        String fileNameLower = fileName.toLowerCase();
-
-        // 지원되는 래스터 이미지 확장자인 경우 처리
-        if (fileNameLower.endsWith(".png") || fileNameLower.endsWith(".jpg") ||
-                fileNameLower.endsWith(".jpeg") || fileNameLower.endsWith(".gif")) {
-            try {
-                String base64Content = Base64.getEncoder().encodeToString(fileBytes);
-                String mimeType = fileNameLower.endsWith(".png") ? "image/png"
-                        : (fileNameLower.endsWith(".gif") ? "image/gif" : "image/jpeg");
-
-                String svgWrapper = String.format(
-                        "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 800 600\">"
-                                +
-                                "<image width=\"100%%\" height=\"100%%\" xlink:href=\"data:%s;base64,%s\"/></svg>",
-                        mimeType, base64Content);
-                return svgWrapper.getBytes(StandardCharsets.UTF_8);
-            } catch (Exception e) {
-                System.err.println("SVG 변환 중 오류 발생 (" + fileName + "): " + e.getMessage());
-            }
-        }
-        // CGM, PDF 등 전용 변환 라이브러리가 필요한 포맷은 원본 데이터를 유지합니다.
-        return fileBytes;
-    }
-
-    /**
-     * 파일명이 S1000D ICN(이미지) 확장자인지 확인합니다.
-     */
-    private boolean isIcnFile(String fileName) {
-        return fileName.endsWith(".png") || fileName.endsWith(".jpg") || fileName.endsWith(".jpeg") ||
-                fileName.endsWith(".svg") || fileName.endsWith(".gif") || fileName.endsWith(".tif") ||
-                fileName.endsWith(".tiff") || fileName.endsWith(".cgm") || fileName.endsWith(".pdf") ||
-                fileName.endsWith(".cgm");
-    }
-
-    /**
-     * 파일 크기(byte)를 읽기 쉬운 단위(KB, MB 등)로 변환합니다.
-     */
-    private String formatSize(long size) {
-        if (size <= 0)
-            return "0 B";
-        final String[] units = new String[] { "B", "KB", "MB", "GB", "TB" };
-        int digitGroup = (int) (Math.log10(size) / Math.log10(1024));
-        return String.format("%.2f %s",
-                size / Math.pow(1024, digitGroup),
-                units[digitGroup]);
     }
 
 }

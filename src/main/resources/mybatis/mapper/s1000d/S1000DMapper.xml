@@ -30,11 +30,7 @@
     <delete id="deleteCsdb" parameterType="java.util.Map">
         delete 
           from csdb_master
-         where csdb_id = (
-            select csdb_id
-              from csdb_master
-            where replace(filename,'.zip','') = #{csdb_id}
-         ) 
+         where csdb_id = #{csdb_id} 
     </delete>
     
     <!-- pmcTree 조회 쿼리 -->
